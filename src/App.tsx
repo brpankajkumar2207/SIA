@@ -628,12 +628,16 @@ const SectionHeading = ({ title, subtitle, className = "" }: { title: string, su
 );
 
 const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: boolean }) => (
-  <div className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4`}>
-    <div className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-sm flex items-start gap-3 ${
-      isSakhi ? 'bg-sia-cream rounded-tl-none text-sia-text border border-sia-pink-light/30' : 'bg-sia-pink-light rounded-br-none text-sia-text'
+  <div className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4 px-4`}>
+    <div className={`max-w-[85%] px-5 py-3 rounded-[1.2rem] shadow-sm flex flex-col ${
+      isSakhi 
+        ? 'bg-white rounded-tl-none text-sia-text border border-sia-pink-light/40 shadow-sm' 
+        : 'bg-sia-pink rounded-br-none text-white shadow-[0_4px_15px_rgba(216,27,96,0.15)]'
     }`}>
-      {isSakhi && <div className="w-2 h-2 rounded-full bg-sia-pink mt-1.5 shrink-0" />}
       <p className="text-sm leading-relaxed">{message}</p>
+      <div className={`text-[8px] font-bold uppercase tracking-tighter mt-1 opacity-40 self-end ${isSakhi ? 'text-sia-text' : 'text-white'}`}>
+        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </div>
     </div>
   </div>
 );
@@ -1309,20 +1313,24 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="pt-32 px-6 max-w-4xl mx-auto flex flex-col items-center pb-40"
+            className="pt-20 md:pt-32 px-0 md:px-6 max-w-4xl mx-auto flex flex-col items-center pb-0 md:pb-40 h-[calc(100vh-80px)] md:h-auto"
           >
             <SectionHeading 
               title="Sakhi Wellness"
               subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
+              className="hidden md:block"
             />
             
-            <div className="w-full max-w-2xl bg-white rounded-[3rem] p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-sia-pink-light flex flex-col h-[500px] md:h-[700px] mb-20 overflow-hidden">
-              <div className="flex items-center gap-4 mb-10 p-5 rounded-[2rem] bg-sia-cream border border-sia-pink-light/30">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
-                  <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col flex-1 md:h-[700px] overflow-hidden relative">
+              {/* WhatsApp-style Background Pattern (Subtle) */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+              
+              <div className="flex items-center gap-4 mb-2 md:mb-10 p-4 md:p-5 bg-white md:bg-sia-cream border-b md:border border-sia-pink-light/30 z-10">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
+                  <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sia-text italic font-serif">Sakhi Companion</h4>
+                  <h4 className="font-bold text-sia-text italic font-serif text-sm md:text-base">Sakhi Companion</h4>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                     Ready to support
@@ -1348,19 +1356,7 @@ export default function App() {
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="mt-auto space-y-6">
-                <div className="flex flex-wrap gap-2">
-                  {['Ajwain water relief', 'Ginger tea for cramps', 'Comfort yoga poses'].map((item) => (
-                    <button 
-                      key={item} 
-                      onClick={() => handleSendMessage(item)}
-                      className="px-4 py-2 rounded-full bg-sia-pink-light/30 border border-sia-pink-light hover:bg-sia-pink-light transition-colors text-[10px] font-bold uppercase tracking-widest text-sia-pink shadow-sm"
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
+              <div className="mt-auto p-4 bg-white md:bg-transparent border-t md:border-none border-sia-pink-light/30">
                 <form 
                   className="relative"
                   onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
