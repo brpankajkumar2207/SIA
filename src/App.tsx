@@ -38,7 +38,9 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { getWellnessAdvice } from './services/geminiService';
+import { askSakhiKnows } from './services/sakhiAI';
+
+
 
 // --- Types ---
 type AppState = 'idle' | 'finding' | 'peer-chat';
@@ -998,6 +1000,9 @@ export default function App() {
   ]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [provider, setProvider] = useState('Groq');
+
   const [questions, setQuestions] = useState<Question[]>([
     { id: '1', user: 'Anonymous', text: 'What helps with painful cramps in hostel?', time: '2m ago', replies: 3 },
     { id: '2', user: 'Anonymous', text: 'Safe workout suggestions while on period?', time: '15m ago', replies: 1 },
@@ -1017,15 +1022,49 @@ export default function App() {
     const textToSend = msg || userInput;
     if (!textToSend.trim()) return;
 
-    const newUserMsg: ChatMessage = { role: 'user', content: textToSend };
-    setChatMessages(prev => [...prev, newUserMsg]);
-    if (!msg) setUserInput('');
     setIsTyping(true);
 
-    const aiResponse = await getWellnessAdvice(textToSend);
-    setChatMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
-    setIsTyping(false);
+    setChatMessages(prev => [
+      ...prev,
+      { role: 'user', content: textToSend }
+    ]);
+
+    if (!msg) setUserInput('');
+
+    try {
+      const { reply, provider: activeProvider } = await askSakhiKnows(textToSend, history);
+
+      setHistory(prev => [
+        ...prev,
+        { role: 'user', content: textToSend },
+        { role: 'assistant', content: reply },
+      ]);
+
+      setChatMessages(prev => [
+        ...prev,
+        { role: 'ai', content: reply }
+      ]);
+
+      setProvider(activeProvider || 'Unavailable');
+    } catch (error) {
+      console.error('Sakhi chat error:', error);
+      const fallbackReply = 'Sakhi Knows is taking a short break. Please try again in a moment. 💙';
+
+      setChatMessages(prev => [
+        ...prev,
+        { role: 'ai', content: fallbackReply }
+      ]);
+      setHistory(prev => [
+        ...prev,
+        { role: 'user', content: textToSend },
+        { role: 'assistant', content: fallbackReply },
+      ]);
+      setProvider('Unavailable');
+    } finally {
+      setIsTyping(false);
+    }
   };
+
 
   const handlePostQuestion = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,0 +1,184 @@
+[
+  {
+    "id": "remedy_001",
+    "topic": "cramps",
+    "title": "Ajwain Water",
+    "content": "Boil 1 teaspoon of ajwain (carom seeds) in 1 cup of water for 5 minutes. Strain and drink warm. Helps relieve menstrual cramps within 20-30 minutes. Safe to drink twice a day during periods.",
+    "tags": ["cramps", "pain", "ajwain", "carom seeds", "home remedy"]
+  },
+  {
+    "id": "remedy_002",
+    "topic": "cramps",
+    "title": "Ginger Jaggery Tea",
+    "content": "Boil a 1-inch piece of fresh ginger in 2 cups of water for 10 minutes. Add 1 teaspoon of jaggery and stir. Drink warm. Relieves bloating, nausea and cramps. Drink up to 3 times a day.",
+    "tags": ["cramps", "bloating", "nausea", "ginger", "jaggery", "tea"]
+  },
+  {
+    "id": "remedy_003",
+    "topic": "back pain",
+    "title": "Heat Therapy",
+    "content": "Apply a warm cloth or heating pad to the lower abdomen or lower back for 15-20 minutes. Relieves muscle tension and cramps. Repeat every 2-3 hours. Always use a cloth barrier — do not apply heat directly to bare skin.",
+    "tags": ["back pain", "cramps", "heat", "heating pad", "abdomen"]
+  },
+  {
+    "id": "remedy_004",
+    "topic": "cramps",
+    "title": "Fetal Sleep Position",
+    "content": "Lie on your side and draw your knees up toward your chest. This relaxes the muscles around your pelvis and reduces cramp intensity. Best sleep position during periods.",
+    "tags": ["cramps", "sleep", "position", "fetal", "posture"]
+  },
+  {
+    "id": "remedy_005",
+    "topic": "back pain",
+    "title": "Yoga for Period Pain",
+    "content": "Child's pose: Kneel, sit back on heels, stretch arms forward on floor, hold 30 seconds. Cat-cow pose: On hands and knees, arch and round your back slowly 10 times. Both ease lower back pain and pelvic tension.",
+    "tags": ["yoga", "back pain", "cramps", "child pose", "cat cow", "stretching"]
+  },
+  {
+    "id": "remedy_006",
+    "topic": "hydration",
+    "title": "Warm Water Hydration",
+    "content": "Drink warm or room-temperature water throughout your period. Warm water improves circulation and relaxes muscles, reducing cramps. Aim for 8-10 glasses per day. Avoid cold drinks during heavy flow days.",
+    "tags": ["hydration", "water", "cramps", "bloating", "warm water"]
+  },
+  {
+    "id": "remedy_007",
+    "topic": "diet",
+    "title": "Foods to Avoid During Periods",
+    "content": "Avoid: excess salt (causes bloating), caffeine like tea and coffee (worsens cramps), cold foods and drinks (tightens muscles), processed and junk food (increases inflammation), alcohol (worsens mood and dehydration).",
+    "tags": ["diet", "food", "avoid", "salt", "caffeine", "coffee", "bloating", "cramps"]
+  },
+  {
+    "id": "remedy_008",
+    "topic": "diet",
+    "title": "Foods to Eat During Periods",
+    "content": "Eat: bananas (potassium, reduces cramps), dark chocolate 70%+ (magnesium, improves mood), spinach and methi (iron, fights fatigue), almonds and flaxseed (omega-3, reduces inflammation), turmeric milk at night for pain relief.",
+    "tags": ["diet", "food", "banana", "chocolate", "spinach", "almonds", "turmeric", "haldi", "iron"]
+  },
+  {
+    "id": "remedy_009",
+    "topic": "bloating",
+    "title": "Reducing Period Bloating",
+    "content": "Drink warm saunf (fennel seed) water — boil 1 tsp saunf in water and drink. Avoid salt and salty snacks. Light walking for 10-15 minutes helps. Avoid carbonated drinks completely.",
+    "tags": ["bloating", "gas", "saunf", "fennel", "swelling", "water retention"]
+  },
+  {
+    "id": "remedy_010",
+    "topic": "fatigue",
+    "title": "Dealing with Period Fatigue",
+    "content": "Period fatigue is caused by iron loss during bleeding. Eat iron-rich foods: spinach, rajma, chana, dates (khajur), jaggery. Sleep 7-9 hours. Light activity is better than complete rest. Stay hydrated with warm fluids.",
+    "tags": ["fatigue", "tired", "energy", "weakness", "iron", "sleep", "dates", "khajur"]
+  },
+  {
+    "id": "remedy_011",
+    "topic": "mood",
+    "title": "Managing Mood Swings and PMS",
+    "content": "Mood swings are caused by hormonal changes — completely normal. Eat magnesium-rich foods: dark chocolate, almonds, bananas. Avoid caffeine and alcohol. Light exercise releases endorphins. Practice deep breathing: inhale 4 counts, hold 4, exhale 6.",
+    "tags": ["mood", "mood swings", "pms", "irritability", "anxiety", "emotional", "hormones"]
+  },
+  {
+    "id": "remedy_012",
+    "topic": "hygiene",
+    "title": "Sanitary Pad Hygiene",
+    "content": "Change pads every 4-6 hours regardless of flow. Leaving pads too long causes infections and rashes. Use overnight pads at night and change first thing in the morning. Always wash hands before and after changing.",
+    "tags": ["hygiene", "pad", "sanitary pad", "change", "infection", "rash"]
+  },
+  {
+    "id": "remedy_013",
+    "topic": "hygiene",
+    "title": "Menstrual Cup Use",
+    "content": "Empty menstrual cups every 8-12 hours. Wash with mild soap and warm water. Sterilize by boiling in water for 5 minutes before first use each cycle. Cups are reusable for up to 10 years and eco-friendly.",
+    "tags": ["menstrual cup", "cup", "hygiene", "reusable", "eco"]
+  },
+  {
+    "id": "remedy_014",
+    "topic": "hygiene",
+    "title": "Safe Disposal of Sanitary Products",
+    "content": "Wrap used pads in the wrapper of the new pad or newspaper before disposing. Never flush pads down the toilet — they block drains. Dispose in a closed dustbin. Never flush tampons or cups either.",
+    "tags": ["disposal", "hygiene", "dustbin", "sanitary waste", "flush", "toilet", "environment"]
+  },
+  {
+    "id": "remedy_015",
+    "topic": "irregular periods",
+    "title": "Why Periods Become Irregular",
+    "content": "Common causes: high stress, sudden weight gain or loss, PCOS, thyroid issues, over-exercising, poor sleep, nutritional deficiencies. Occasional irregularity of 1-2 weeks is normal. If consistently irregular for 3+ months, consult a gynaecologist.",
+    "tags": ["irregular", "late period", "missed period", "PCOS", "thyroid", "stress", "cycle"]
+  },
+  {
+    "id": "remedy_016",
+    "topic": "irregular periods",
+    "title": "Home Remedies for Irregular Periods",
+    "content": "Eat sesame seeds (til) with jaggery daily 2 weeks before expected period. Drink cinnamon (dalchini) tea — boil 1 stick in water — once daily. Maintain consistent sleep. Manage stress through yoga. These support hormonal balance but are not medical treatments.",
+    "tags": ["irregular", "regulate", "sesame", "til", "cinnamon", "dalchini", "hormones"]
+  },
+  {
+    "id": "remedy_017",
+    "topic": "heavy bleeding",
+    "title": "Managing Heavy Period Flow",
+    "content": "Heavy flow can cause fatigue and anaemia. Increase iron: spinach, rajma, dates. Stay hydrated. Avoid aspirin — it worsens bleeding. Cold compress on lower abdomen can temporarily reduce heavy flow. If soaking more than one pad per hour for 2+ hours, seek medical help immediately.",
+    "tags": ["heavy bleeding", "heavy flow", "anaemia", "iron", "excessive bleeding"]
+  },
+  {
+    "id": "remedy_018",
+    "topic": "sleep",
+    "title": "Better Sleep During Periods",
+    "content": "Use a heating pad on low setting while sleeping. Wear comfortable loose clothing. Sleep in fetal position. Keep room slightly cool. Drink warm turmeric milk before bed. Place a towel under you if worried about leaking overnight.",
+    "tags": ["sleep", "insomnia", "night", "rest", "heating pad", "turmeric milk", "leak"]
+  },
+  {
+    "id": "remedy_019",
+    "topic": "pain relief",
+    "title": "When to Take Pain Medicine",
+    "content": "Ibuprofen (Combiflam or Brufen) is safe and effective for period pain. Take with food, not on empty stomach. Do not exceed recommended dose. Avoid aspirin as it increases bleeding. If you need medicine every cycle or it stops working, consult a doctor.",
+    "tags": ["medicine", "ibuprofen", "combiflam", "brufen", "pain relief", "tablet", "painkiller"]
+  },
+  {
+    "id": "emergency_001",
+    "topic": "emergency",
+    "title": "When to See a Doctor Immediately",
+    "content": "See a doctor immediately if: fever above 101°F with heavy bleeding, cramps so severe you cannot stand, bleeding soaking more than one pad per hour for 2+ hours, period lasting more than 7 days, sudden sharp abdominal pain, foul-smelling discharge, or fainting.",
+    "tags": ["emergency", "doctor", "severe", "fever", "heavy bleeding", "faint", "urgent"]
+  },
+  {
+    "id": "emergency_002",
+    "topic": "emergency",
+    "title": "Period Emergency Kit",
+    "content": "Always carry: 2-3 sanitary pads or tampons, ibuprofen tablet, hand sanitizer, dark-colored spare underwear, disposal bags for used pads, small heating patch. Keep in your bag or school/college locker so you are never unprepared.",
+    "tags": ["emergency kit", "kit", "prepared", "travel", "school", "college", "supplies"]
+  },
+  {
+    "id": "myth_001",
+    "topic": "myths",
+    "title": "Common Period Myths Busted",
+    "content": "Myth: Cannot exercise during periods. Fact: Light exercise reduces cramps. Myth: Period blood is dirty. Fact: It is normal uterine lining. Myth: Should not wash hair during periods. Fact: No medical basis. Myth: Irregular periods always mean PCOS. Fact: Many causes exist, only a doctor can diagnose PCOS.",
+    "tags": ["myth", "misconception", "facts", "exercise", "hair wash", "dirty", "PCOS"]
+  },
+  {
+    "id": "myth_002",
+    "topic": "myths",
+    "title": "Myths About Period and Food",
+    "content": "Myth: Do not eat sour foods during periods. Fact: No evidence sour foods worsen periods. Myth: Pickles stop periods. Fact: Pickles are high in salt causing bloating but don't affect uterus. Myth: Cold food stops periods. Fact: Cold foods may cause temporary muscle tightening but cannot stop your period.",
+    "tags": ["myth", "food", "sour", "pickle", "tamarind", "cold food", "misconception"]
+  },
+  {
+    "id": "emotional_001",
+    "topic": "emotional support",
+    "title": "You Are Not Alone",
+    "content": "Periods can be physically and emotionally difficult. What you feel — the pain, mood changes, exhaustion — is real and valid. There is no shame in asking for help or resting. Sakhi is here for you. You are part of a community of women who support each other.",
+    "tags": ["emotional", "support", "mental health", "shame", "community", "alone", "feelings", "valid"]
+  },
+  {
+    "id": "network_001",
+    "topic": "sakhi network",
+    "title": "What is the Sakhi Network",
+    "content": "Sakhi is a peer-to-peer period emergency network. If you run out of sanitary products, request help from verified Sakhi volunteers near you. All helpers are verified women. Your location is only shared when you send a request and is removed after the emergency is resolved.",
+    "tags": ["sakhi", "network", "help", "volunteer", "emergency", "request", "location", "peer"]
+  },
+  {
+    "id": "network_002",
+    "topic": "sakhi network",
+    "title": "How to Request Help on Sakhi",
+    "content": "To request period supplies: open the app, tap SOS button, select what you need (pad, tampon, or cup), confirm your location, and a verified volunteer near you will be notified. After receiving help, pay it forward by becoming a Sakhi helper yourself.",
+    "tags": ["request", "SOS", "help", "supplies", "volunteer", "how to", "app"]
+  }
+]
