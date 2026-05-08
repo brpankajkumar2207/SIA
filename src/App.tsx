@@ -1228,16 +1228,24 @@ export default function App() {
                       SIA creates a dignified path to support. By anonymizing the request and masking the location, we dissolve the social friction that prevents women from getting help when they need it most.
                     </p>
                   </div>
+                  
                   <div className="flex-1 p-10 bg-sia-pink text-white rounded-[3rem] flex flex-col justify-center relative overflow-hidden group">
                     <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10" />
-                    <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Join the Network</h3>
-                    <p className="text-white/80 font-light text-sm leading-relaxed mb-8">
-                      Become part of a movement that prioritizes safety and human connection. Register as a verified sister today.
+                    <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Flash Wisdom</h3>
+                    <p className="text-white/80 font-light text-sm leading-relaxed mb-4">
+                      "Self-care is how you take your power back." - Quick wellness insights powered by SIA AI.
                     </p>
-                    <button className="w-fit px-8 py-3 bg-white text-sia-pink rounded-full font-bold uppercase tracking-widest text-[10px] shadow-lg hover:scale-105 transition-transform">
-                      Register Now
-                    </button>
-
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-12 bg-white/30 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ x: "-100%" }}
+                          animate={{ x: "100%" }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                          className="h-full w-full bg-white"
+                        />
+                      </div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Daily Insight</span>
+                    </div>
                   </div>
                 </div>
               </div>
