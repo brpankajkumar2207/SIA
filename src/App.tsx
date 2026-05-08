@@ -5,8 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-<<<<<<< HEAD
-import {
+import { 
   Heart,
   Shield,
   User,
@@ -15,22 +14,10 @@ import {
   X,
   MapPin,
   Sparkles,
-=======
-import { 
-  Heart, 
-  Shield, 
-  User, 
-  MessageSquare, 
-  Search, 
-  X, 
-  MapPin, 
-  Sparkles, 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
   ArrowRight,
   Droplets,
   Zap,
   Navigation,
-<<<<<<< HEAD
   Loader2,
   Clock,
   AlertTriangle,
@@ -50,27 +37,19 @@ import {
   ChevronRight,
   Eye,
   EyeOff
-=======
-  Loader2
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
 } from 'lucide-react';
 import { getWellnessAdvice } from './services/geminiService';
 
 // --- Types ---
 type AppState = 'idle' | 'finding' | 'peer-chat';
-<<<<<<< HEAD
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'ai' | 'capsule';
-=======
-type Tab = 'home' | 'community' | 'ai';
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
 type Question = { id: string; user: string; text: string; time: string; replies: number };
 
 // --- Components ---
 // ... (rest of the components stay same, except specific chat logic)
 
-<<<<<<< HEAD
 const Navbar = ({ onProfile, onBack, showBack = false, activeView }: { onProfile?: () => void; onBack?: () => void; showBack?: boolean; activeView: AppView }) => (
   <nav className="fixed top-0 left-0 w-full h-20 px-10 flex items-center justify-between z-[100] bg-white/40 backdrop-blur-md border-b border-sia-pink-light">
     <div className="flex items-center gap-4">
@@ -92,20 +71,11 @@ const Navbar = ({ onProfile, onBack, showBack = false, activeView }: { onProfile
         <div className="absolute inset-0 rounded-full bg-sia-pink/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
         <User className={`w-5 h-5 transition-colors ${activeView !== 'main' ? 'text-sia-pink' : 'text-sia-pink/60'}`} />
       </motion.div>
-=======
-const Navbar = ({ onProfile }: { onProfile?: () => void }) => (
-  <nav className="fixed top-0 left-0 w-full h-16 px-10 flex items-center justify-between z-50 bg-white/40 backdrop-blur-md border-b border-sia-pink-light">
-    <div className="text-2xl font-bold tracking-tighter text-sia-pink font-serif italic">SIA</div>
-    <div className="flex items-center gap-6">
-      <div className="w-10 h-10 rounded-full border-2 border-white bg-sia-pink-light shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" onClick={onProfile}>
-        <User className="w-5 h-5 text-sia-pink opacity-60" />
-      </div>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
     </div>
   </nav>
 );
 
-<<<<<<< HEAD
+
 const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate: (view: AppView) => void }) => {
   const menuItems = [
     { id: 'profile', icon: User, label: 'Profile', desc: 'Personal details, trust level, and activity' },
@@ -392,13 +362,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
     { id: 'arin', icon: MessageSquare, label: 'Arin' },
     { id: 'ai', icon: Sparkles, label: 'AI' },
     { id: 'capsule', icon: Heart, label: 'Capsule' },
-=======
-const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (tab: Tab) => void }) => {
-  const tabs: { id: Tab; icon: any; label: string }[] = [
-    { id: 'home', icon: Shield, label: 'Home' },
-    { id: 'community', icon: MessageSquare, label: 'Arin' },
-    { id: 'ai', icon: Sparkles, label: 'AI' },
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
+
   ];
 
   return (
@@ -408,14 +372,9 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-<<<<<<< HEAD
-            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-sia-pink scale-110' : 'text-sia-text-muted opacity-40'
-              }`}
-=======
             className={`flex flex-col items-center gap-1 transition-all duration-300 ${
               activeTab === tab.id ? 'text-sia-pink scale-110' : 'text-sia-text-muted opacity-40'
             }`}
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-sia-pink/10' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>
@@ -443,11 +402,7 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
   };
 
   return (
-<<<<<<< HEAD
-    <motion.div
-=======
     <motion.div 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       className="fixed inset-0 z-[100] bg-sia-cream flex flex-col"
@@ -466,14 +421,9 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-<<<<<<< HEAD
-            <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${m.role === 'user' ? 'bg-sia-pink text-white rounded-br-none' : 'bg-white text-sia-text rounded-tl-none border border-sia-pink-light'
-              }`}>
-=======
             <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${
               m.role === 'user' ? 'bg-sia-pink text-white rounded-br-none' : 'bg-white text-sia-text rounded-tl-none border border-sia-pink-light'
             }`}>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
               {m.sender && <div className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">{m.sender}</div>}
               <p className="text-sm">{m.content}</p>
             </div>
@@ -483,11 +433,7 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
 
       <form onSubmit={sendMsg} className="p-6 bg-white border-t border-sia-pink-light">
         <div className="relative">
-<<<<<<< HEAD
-          <input
-=======
           <input 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
@@ -513,11 +459,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
   ];
 
   return (
-<<<<<<< HEAD
-    <motion.div
-=======
     <motion.div 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -535,11 +477,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
         <div className="w-12 h-1 bg-[#FCE4EC] rounded-full mx-auto mb-10" />
         <h3 className="font-serif italic font-bold text-3xl text-center mb-2 text-sia-text">How can we help?</h3>
         <p className="text-sia-text-muted text-center mb-8 px-4 font-light">Your request will be broadcasted anonymously to nearby verified women.</p>
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
         <div className="grid grid-cols-1 gap-4">
           {options.map((opt) => (
             <motion.button
@@ -560,13 +498,8 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
             </motion.button>
           ))}
         </div>
-<<<<<<< HEAD
-
-        <button
-=======
         
         <button 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
           onClick={onClose}
           className="absolute top-6 right-8 p-3 rounded-full bg-sia-cream text-sia-pink-light hover:text-sia-pink transition-colors"
         >
@@ -592,11 +525,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
       <div className="relative mb-12">
         <div className="absolute inset-0 w-80 h-80 -left-8 -top-8 border border-sia-pink/10 rounded-full opacity-50" />
         <div className="absolute inset-0 w-64 h-64 border border-sia-pink/20 rounded-full opacity-40" />
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
         <div className={`w-48 h-48 rounded-full bg-gradient-to-br transition-all duration-700 ${matchFound ? 'from-green-400 to-green-600 scale-110 shadow-[0_20px_60px_rgba(34,197,94,0.3)]' : 'from-sia-peach to-sia-pink shadow-[0_20px_50px_rgba(216,27,96,0.3)] pulsate'} flex flex-col items-center justify-center text-white border-4 border-white/20 z-10 relative`}>
           {matchFound ? (
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
@@ -615,28 +544,15 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
           <motion.div
             key={i}
             initial={{ opacity: 0, scale: 0 }}
-<<<<<<< HEAD
-            // ... (rest of matching dots)
-            animate={{
-              opacity: [0, 1, 0],
-=======
-// ... (rest of matching dots)
             animate={{ 
               opacity: [0, 1, 0], 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
               scale: [0, 1, 1.2],
               x: Math.random() * 260 - 130,
               y: Math.random() * 260 - 130
             }}
-<<<<<<< HEAD
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-=======
             transition={{ 
               duration: 3, 
               repeat: Infinity, 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
               delay: i * 0.5,
               ease: "easeOut"
             }}
@@ -646,33 +562,21 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
           </motion.div>
         ))}
       </div>
-<<<<<<< HEAD
-
-=======
       
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       <h2 className="font-serif italic text-4xl text-center mb-3 text-sia-text">
         {matchFound ? 'Sister found!' : 'Finding support...'}
       </h2>
       <p className="text-sia-text-muted text-center mb-8 max-w-sm font-light">
         {matchFound ? 'A nearby sister has confirmed she can help.' : 'Connecting you with verified sisters nearby. Your identity remains private throughout.'}
       </p>
-<<<<<<< HEAD
-
-=======
       
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       {!matchFound && (
         <div className="bg-white/40 backdrop-blur-md px-6 py-4 rounded-full flex items-center gap-3 mb-12 border border-sia-pink-light shadow-sm">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           <span className="text-xs uppercase tracking-widest font-bold opacity-60">Searching within ~300m</span>
         </div>
       )}
-<<<<<<< HEAD
-
-=======
       
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       {matchFound ? (
         <motion.button
           initial={{ y: 20, opacity: 0 }}
@@ -691,11 +595,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
 
       <div className="flex flex-col gap-4 w-full max-w-xs mt-8">
         {!matchFound && (
-<<<<<<< HEAD
-          <motion.button
-=======
           <motion.button 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
             whileHover={{ scale: 1.02, backgroundColor: '#fff' }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-4 rounded-full bg-white/60 border border-sia-pink-light shadow-sm font-bold text-sia-pink h-14 uppercase tracking-widest text-xs"
@@ -703,11 +603,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
             Stay Safe
           </motion.button>
         )}
-<<<<<<< HEAD
-        <button
-=======
         <button 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
           onClick={onCancel}
           className="w-full py-2 text-[10px] text-sia-pink opacity-40 uppercase tracking-widest font-bold hover:opacity-100 transition-opacity"
         >
@@ -727,21 +623,16 @@ const SectionHeading = ({ title, subtitle, className = "" }: { title: string, su
 
 const ChatBubble = ({ message, isAI = false }: { message: string, isAI?: boolean }) => (
   <div className={`flex ${isAI ? 'justify-start' : 'justify-end'} mb-4`}>
-<<<<<<< HEAD
-    <div className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-sm flex items-start gap-3 ${isAI ? 'bg-sia-cream rounded-tl-none text-sia-text border border-sia-pink-light/30' : 'bg-sia-pink-light rounded-br-none text-sia-text'
-      }`}>
-=======
     <div className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-sm flex items-start gap-3 ${
       isAI ? 'bg-sia-cream rounded-tl-none text-sia-text border border-sia-pink-light/30' : 'bg-sia-pink-light rounded-br-none text-sia-text'
     }`}>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       {isAI && <div className="w-2 h-2 rounded-full bg-sia-pink mt-1.5 shrink-0" />}
       <p className="text-sm leading-relaxed">{message}</p>
     </div>
   </div>
 );
 
-<<<<<<< HEAD
+
 const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: any) => (
   <motion.div
     whileHover={{ y: -8, scale: 1.02 }}
@@ -1102,12 +993,6 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   
-=======
-export default function App() {
-  const [appState, setAppState] = useState<AppState>('idle');
-  const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [showSOSModal, setShowSOSModal] = useState(false);
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { role: 'ai', content: "Hello! I'm SIA Wellness AI. How can I help you feel better today?" }
   ]);
@@ -1165,7 +1050,6 @@ export default function App() {
     setAppState('finding');
   };
 
-<<<<<<< HEAD
   const handleProfileClick = () => {
     setShowProfileMenu(!showProfileMenu);
   };
@@ -1182,9 +1066,6 @@ export default function App() {
     setActiveView('main');
     setActiveTab('home');
   };
-
-=======
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
   if (appState === 'peer-chat') {
     return <PeerChat onBack={() => { setAppState('idle'); setActiveTab('home'); }} />;
   }
@@ -1192,15 +1073,9 @@ export default function App() {
   if (appState === 'finding') {
     return (
       <div className="min-h-screen font-sans bg-sia-cream">
-<<<<<<< HEAD
         <Navbar activeView={activeView} />
         <WaitingScreen
           onCancel={() => setAppState('idle')}
-=======
-        <Navbar />
-        <WaitingScreen 
-          onCancel={() => setAppState('idle')} 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
           onMatchFound={() => setAppState('peer-chat')}
         />
       </div>
@@ -1209,7 +1084,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen font-sans bg-sia-cream selection:bg-sia-pink-light overflow-x-hidden pb-32">
-<<<<<<< HEAD
       <Navbar 
         showBack={activeView !== 'main' || activeTab !== 'home'} 
         onBack={activeView !== 'main' ? handleBackToMain : () => setActiveTab('home')} 
@@ -1252,12 +1126,6 @@ export default function App() {
         {activeView === 'main' && (
           <>
             {activeTab === 'home' && (
-=======
-      <Navbar />
-      
-      <AnimatePresence mode="wait">
-        {activeTab === 'home' && (
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
           <motion.div
             key="home"
             initial={{ opacity: 0, y: 20 }}
@@ -1269,11 +1137,7 @@ export default function App() {
               {/* Background decorations */}
               <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-sia-pink-light/30 rounded-full blur-[120px] -mr-60 -mt-60" />
               <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-sia-pink-light/20 rounded-full blur-[100px] -ml-60 -mb-60" />
-<<<<<<< HEAD
 
-=======
-              
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
               <div className="max-w-6xl mx-auto w-full relative z-10">
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-20">
                   <motion.div
@@ -1283,17 +1147,10 @@ export default function App() {
                     className="flex-1 text-center lg:text-left space-y-8"
                   >
                     <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white border border-sia-pink-light text-sia-pink text-[10px] uppercase font-bold tracking-[0.2em] shadow-sm">
-<<<<<<< HEAD
                       <Shield className="w-3 h-3" /> Anonymous Peer Network
                     </div>
                     <h1 className="font-serif italic font-bold text-7xl md:text-9xl text-sia-text !leading-[0.85] tracking-tight">
                       You’re not<br /> <span className="text-sia-pink">alone</span>
-=======
-                       <Shield className="w-3 h-3" /> Anonymous Peer Network
-                    </div>
-                    <h1 className="font-serif italic font-bold text-7xl md:text-9xl text-sia-text !leading-[0.85] tracking-tight">
-                      You’re not<br/> <span className="text-sia-pink">alone</span>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
                     </h1>
                     <p className="text-lg md:text-2xl text-sia-text-muted max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
                       Private support during period emergencies — without the discomfort of asking.
@@ -1302,7 +1159,7 @@ export default function App() {
 
                   {/* SOS Button Area */}
                   <div className="flex-1 flex flex-col items-center justify-center relative">
-<<<<<<< HEAD
+
                     <div className="absolute w-[30rem] h-[30rem] border border-sia-pink/5 rounded-full animate-pulse" />
                     <div className="absolute w-[24rem] h-[24rem] border border-sia-pink/10 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
 
@@ -1380,28 +1237,7 @@ export default function App() {
                     <button className="w-fit px-8 py-3 bg-white text-sia-pink rounded-full font-bold uppercase tracking-widest text-[10px] shadow-lg hover:scale-105 transition-transform">
                       Register Now
                     </button>
-=======
-                     <div className="absolute w-[30rem] h-[30rem] border border-sia-pink/5 rounded-full animate-pulse" />
-                     <div className="absolute w-[24rem] h-[24rem] border border-sia-pink/10 rounded-full animate-pulse" style={{animationDelay: '1s'}} />
-                     
-                     <div className="relative">
-                        <motion.button
-                          id="sos-button"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleSOSClick}
-                          className="relative w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-br from-sia-peach to-sia-pink shadow-[0_20px_60px_rgba(216,27,96,0.4)] flex flex-col items-center justify-center text-white border-[10px] border-white group z-10"
-                        >
-                          <Heart className="w-12 h-12 text-white mb-4 fill-white animate-bounce" />
-                          <span className="font-bold text-5xl md:text-6xl tracking-[0.2em] drop-shadow-md">HELP</span>
-                          <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </motion.button>
-                        
-                        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full text-center">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-sia-pink opacity-40">Tap to request support anonymously</p>
-                        </div>
-                     </div>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
+
                   </div>
                 </div>
               </div>
@@ -1409,7 +1245,6 @@ export default function App() {
           </motion.div>
         )}
 
-<<<<<<< HEAD
         {activeTab === 'arin' && (
           <motion.div
             key="arin"
@@ -1436,79 +1271,6 @@ export default function App() {
             <TimeCapsulePage />
           </motion.div>
         )}
-
-
-
-=======
-        {activeTab === 'community' && (
-          <motion.div
-            key="community"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="pt-32 px-6 max-w-4xl mx-auto"
-          >
-            <SectionHeading 
-              title="ARIN Community"
-              subtitle="Ask your region anonymously. Verified sisters nearby are ready to share their wisdom."
-            />
-
-            {/* Ask Question Box */}
-            <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-sia-pink-light mb-12">
-              <form onSubmit={handlePostQuestion} className="space-y-4">
-                <textarea 
-                  value={newQuestion}
-                  onChange={(e) => setNewQuestion(e.target.value)}
-                  placeholder="What's on your mind? Ask anonymously in your region..."
-                  className="w-full h-32 p-6 bg-sia-cream rounded-[2rem] border border-sia-pink-light/30 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sm font-light resize-none"
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-40">
-                    <MapPin className="w-3 h-3 text-sia-pink" /> Broadcasting to Central Region
-                  </div>
-                  <button 
-                    type="submit"
-                    className="px-8 py-3 bg-sia-pink text-white rounded-full font-bold uppercase tracking-widest text-[10px] shadow-lg hover:bg-sia-pink-dark transition-colors"
-                  >
-                    Post Question
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Questions List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-sia-text opacity-40">Questions Nearby</h3>
-                <div className="text-[10px] text-sia-pink font-bold uppercase">Live Updates</div>
-              </div>
-              {questions.map((q) => (
-                <motion.div 
-                  key={q.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-8 rounded-[2.5rem] bg-white border border-sia-pink-light shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 rounded-full bg-sia-pink" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-sia-pink opacity-40">{q.user}</span>
-                    <span className="text-[10px] text-gray-300 font-bold uppercase ml-auto">{q.time}</span>
-                  </div>
-                  <h4 className="font-serif italic font-bold text-gray-800 text-lg leading-tight mb-8">“{q.text}”</h4>
-                  <div className="flex items-center justify-between pt-6 border-t border-dashed border-sia-pink-light">
-                    <div className="flex items-center gap-1.5">
-                      <MessageSquare className="w-4 h-4 text-sia-pink opacity-40" />
-                      <span className="text-[10px] font-bold text-sia-text-muted">{q.replies} Replies</span>
-                    </div>
-                    <button className="text-[10px] font-bold uppercase tracking-widest text-sia-pink hover:underline">Respond Anonymously</button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
         {activeTab === 'ai' && (
           <motion.div
             key="ai"
@@ -1517,11 +1279,7 @@ export default function App() {
             exit={{ opacity: 0, y: -20 }}
             className="pt-32 px-6 max-w-4xl mx-auto flex flex-col items-center"
           >
-<<<<<<< HEAD
-            <SectionHeading
-=======
             <SectionHeading 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
               title="SIA Wellness AI"
               subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
             />
@@ -1534,13 +1292,8 @@ export default function App() {
                 <div>
                   <h4 className="font-bold text-sia-text italic font-serif">SIA Companion</h4>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
-<<<<<<< HEAD
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                     Ready to support
-=======
-                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                     Ready to support
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
                   </div>
                 </div>
               </div>
@@ -1563,13 +1316,8 @@ export default function App() {
               <div className="mt-auto space-y-6">
                 <div className="flex flex-wrap gap-2">
                   {['Ajwain water relief', 'Ginger tea for cramps', 'Comfort yoga poses'].map((item) => (
-<<<<<<< HEAD
-                    <button
-                      key={item}
-=======
                     <button 
                       key={item} 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
                       onClick={() => handleSendMessage(item)}
                       className="px-4 py-2 rounded-full bg-sia-pink-light/30 border border-sia-pink-light hover:bg-sia-pink-light transition-colors text-[10px] font-bold uppercase tracking-widest text-sia-pink shadow-sm"
                     >
@@ -1578,20 +1326,6 @@ export default function App() {
                   ))}
                 </div>
 
-<<<<<<< HEAD
-                <form
-                  className="relative"
-                  onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                >
-                  <input
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Ask Sia anything about period wellness..."
-                    disabled={isTyping}
-                    className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
-                  />
-                  <button
-=======
                 <form 
                   className="relative"
                   onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
@@ -1604,7 +1338,6 @@ export default function App() {
                     className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
                   />
                   <button 
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
                     type="submit"
                     disabled={isTyping}
                     className="absolute right-3 top-3 w-10 h-10 rounded-full bg-sia-pink flex items-center justify-center text-white shadow-lg hover:bg-sia-pink-light hover:text-sia-pink transition-all disabled:bg-gray-200"
@@ -1615,7 +1348,6 @@ export default function App() {
               </div>
             </div>
           </motion.div>
-<<<<<<< HEAD
             )}
           </>
         )}
@@ -1625,83 +1357,11 @@ export default function App() {
         <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       )}
 
-
-
-=======
-        )}
-      </AnimatePresence>
-
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-
-      {/* Impact & About Split Footer Look */}
-      <section id="mission" className="py-32 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-           <div className="flex-[1.5] p-12 md:p-20 bg-white border border-sia-pink-light rounded-[3rem] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:rotate-0">
-                 <Heart className="w-64 h-64 text-sia-pink fill-sia-pink" />
-              </div>
-              <h2 className="font-serif italic font-bold text-5xl md:text-6xl mb-12 text-sia-text leading-tight">The Power of<br/>Solidarity</h2>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
-                 <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">175M+</div>
-                    <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Women face monthly emergencies in India</p>
-                 </motion.div>
-                 <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">Instant</div>
-                    <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Anonymous help available with just one tap</p>
-                 </motion.div>
-              </div>
-              
-              <div className="mt-16 pt-16 border-t border-dashed border-sia-pink-light">
-                 <p className="text-2xl font-serif italic text-sia-text-muted mb-8 italic">"Because asking shouldn't be the hardest part."</p>
-                 <div className="flex items-center gap-4">
-                    <div className="flex -space-x-4">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-sia-warm-bg overflow-hidden shadow-sm">
-                           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=sister${i}`} alt="user" />
-                        </div>
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">Verified Support Network</span>
-                 </div>
-              </div>
-           </div>
-           
-           <div className="flex-1 flex flex-col gap-8">
-              <div className="flex-1 p-10 bg-sia-warm-bg border border-sia-pink-light rounded-[3rem] flex flex-col justify-center">
-                 <Shield className="w-10 h-10 text-sia-pink mb-6 opacity-30" />
-                 <h3 className="font-bold text-xl mb-4 text-sia-text uppercase tracking-widest">Our Mission</h3>
-                 <p className="text-sia-text-muted font-light text-sm leading-relaxed">
-                    SIA creates a dignified path to support. By anonymizing the request and masking the location, we dissolve the social friction that prevents women from getting help when they need it most.
-                 </p>
-              </div>
-              <div className="flex-1 p-10 bg-sia-pink text-white rounded-[3rem] flex flex-col justify-center relative overflow-hidden group">
-                 <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10" />
-                 <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Join the Network</h3>
-                 <p className="text-white/80 font-light text-sm leading-relaxed mb-8">
-                    Become part of a movement that prioritizes safety and human connection. Register as a verified sister today.
-                 </p>
-                 <button className="w-fit px-8 py-3 bg-white text-sia-pink rounded-full font-bold uppercase tracking-widest text-[10px] shadow-lg hover:scale-105 transition-transform">
-                    Register Now
-                 </button>
-              </div>
-           </div>
-        </div>
-      </section>
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
-
       {/* Footer Look-alike from design */}
       <footer className="h-16 bg-white border-t border-sia-pink-light px-10 flex items-center justify-between">
         <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
-<<<<<<< HEAD
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          Searching for support within ~300m
-=======
            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
            Searching for support within ~300m
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
         </div>
         <div className="text-[10px] font-bold text-sia-pink opacity-40 italic font-serif">Created with care for her dignity and safety</div>
       </footer>
@@ -1709,7 +1369,6 @@ export default function App() {
       {/* Modals */}
       <AnimatePresence>
         {showSOSModal && (
-<<<<<<< HEAD
           <SOSModal
             onClose={() => setShowSOSModal(false)}
             onSelect={handleSelectOption}
@@ -1724,13 +1383,6 @@ export default function App() {
             }}
           />
         )}
-=======
-          <SOSModal 
-            onClose={() => setShowSOSModal(false)} 
-            onSelect={handleSelectOption}
-          />
-        )}
->>>>>>> 2013389169260bbe15156fd348179d4ea0c55c61
       </AnimatePresence>
     </div>
   );
