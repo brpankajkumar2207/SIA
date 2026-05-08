@@ -642,7 +642,7 @@ const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: b
 const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: any) => (
   <motion.div
     whileHover={{ y: -8, scale: 1.02 }}
-    className="p-8 rounded-[2.8rem] bg-white/60 backdrop-blur-xl border border-sia-pink-light shadow-sm hover:shadow-[0_20px_50px_rgba(216,27,96,0.1)] transition-all relative group"
+    className="p-6 md:p-8 rounded-[2.5rem] md:rounded-[2.8rem] bg-white/60 backdrop-blur-xl border border-sia-pink-light shadow-sm hover:shadow-[0_20px_50px_rgba(216,27,96,0.1)] transition-all relative group"
   >
     <div className="absolute inset-0 bg-gradient-to-br from-sia-pink/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.8rem]" />
     <div className="flex items-start gap-5 relative z-10">
@@ -656,16 +656,6 @@ const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: a
           <span className="text-[10px] font-bold uppercase tracking-widest text-sia-text/30">{time}</span>
         </div>
         <p className="text-base text-sia-text leading-relaxed mb-4 font-serif italic">“{text}”</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="px-4 py-1.5 rounded-full bg-white/80 text-[9px] font-black uppercase tracking-wider text-sia-pink border border-sia-pink-light/50 shadow-sm">
-            {category}
-          </span>
-          {zone && (
-            <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-sia-text/40">
-              <MapPin className="w-3 h-3 text-sia-pink/30" /> {zone}
-            </span>
-          )}
-        </div>
       </div>
     </div>
     {clusterCount > 0 && (
@@ -684,7 +674,6 @@ const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: a
 const TimeCapsulePage = () => {
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [note, setNote] = useState('');
-  const [category, setCategory] = useState('Comfort');
 
   const capsules = [
     { icon: Sparkles, text: "The library washroom usually has emergency pads in the third stall.", zone: "Library", time: "2h ago", category: "Pads Availability", clusterCount: 12 },
@@ -722,11 +711,25 @@ const TimeCapsulePage = () => {
         ))}
       </div>
 
-      <div className="relative z-10">
+    <div className="relative z-10">
         <SectionHeading
           title="Time Capsule 💗"
           subtitle="Anonymous wisdom, comfort, and survival notes left by women nearby."
         />
+
+        {/* Static Write Button */}
+        <div className="flex justify-center mb-16">
+          <motion.button
+            whileHover={{ scale: 1.05, y: -5 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowWriteModal(true)}
+            className="w-full max-w-xl px-6 md:px-10 py-4 md:py-6 rounded-full bg-sia-pink text-white font-bold shadow-[0_20px_50px_rgba(216,27,96,0.3)] flex items-center justify-center gap-4 group overflow-hidden relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-sia-peach/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <span className="uppercase tracking-[0.2em] text-[10px] relative z-10">Leave A Note For Future Women</span>
+            <Heart className="w-5 h-5 fill-white group-hover:animate-bounce relative z-10" />
+          </motion.button>
+        </div>
 
         {/* AI Summary Section */}
         <motion.div
@@ -734,7 +737,7 @@ const TimeCapsulePage = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="mb-20 p-10 md:p-14 rounded-[3.5rem] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_30px_100px_rgba(216,27,96,0.08)] relative overflow-hidden group"
+          className="mb-12 md:mb-20 p-6 md:p-14 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_30px_100px_rgba(216,27,96,0.08)] relative overflow-hidden group"
         >
           <div className="absolute top-0 right-0 p-12 opacity-[0.03] scale-150 group-hover:rotate-12 transition-transform duration-1000">
             <Brain className="w-64 h-64 text-sia-pink" />
@@ -746,7 +749,7 @@ const TimeCapsulePage = () => {
                 <Sparkles className="w-7 h-7 text-white animate-pulse" />
               </div>
               <div>
-                <h3 className="font-serif italic font-bold text-3xl text-sia-text">Nearby Wisdom Summary ✨</h3>
+                <h3 className="font-serif italic font-bold text-2xl md:text-3xl text-sia-text">Nearby Wisdom Summary ✨</h3>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-40">AI-Powered Anonymous Insight</p>
               </div>
             </div>
@@ -794,7 +797,7 @@ const TimeCapsulePage = () => {
               <motion.div 
                 key={i} 
                 whileHover={{ scale: 1.01 }}
-                className="flex items-center gap-8 p-8 rounded-[2.5rem] bg-sia-warm-bg border border-sia-pink-light/50 group cursor-pointer"
+                className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-sia-warm-bg border border-sia-pink-light/50 group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                   <insight.icon className="w-5 h-5 text-sia-pink" />
@@ -808,19 +811,7 @@ const TimeCapsulePage = () => {
           </div>
         </div>
 
-        {/* Write Button */}
-        <div className="fixed bottom-32 right-10 z-[60]">
-          <motion.button
-            whileHover={{ scale: 1.05, y: -5 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowWriteModal(true)}
-            className="px-10 py-6 rounded-full bg-sia-pink text-white font-bold shadow-[0_20px_50px_rgba(216,27,96,0.4)] flex items-center gap-4 group overflow-hidden relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-sia-peach/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-            <span className="uppercase tracking-[0.2em] text-[10px] relative z-10">Leave A Note For Future Women</span>
-            <Heart className="w-5 h-5 fill-white group-hover:animate-bounce relative z-10" />
-          </motion.button>
-        </div>
+
 
         {/* Write Modal */}
         <AnimatePresence>
@@ -836,7 +827,7 @@ const TimeCapsulePage = () => {
                 initial={{ scale: 0.9, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 30 }}
-                className="w-full max-w-2xl bg-white/80 backdrop-blur-2xl p-12 rounded-[3.5rem] border border-white shadow-2xl relative overflow-hidden"
+                className="w-full max-w-2xl bg-white/80 backdrop-blur-2xl p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-white shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
@@ -857,36 +848,12 @@ const TimeCapsulePage = () => {
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="What helped you during a difficult moment? Share something comforting or useful..."
-                      className="w-full h-48 p-10 bg-white/50 rounded-[2.5rem] border border-sia-pink-light/30 focus:ring-4 focus:ring-sia-pink/5 focus:border-sia-pink/30 focus:outline-none transition-all text-xl font-serif italic text-sia-text resize-none placeholder:text-sia-text/20"
+                      className="w-full h-32 md:h-48 p-6 md:p-10 bg-white/50 rounded-[1.5rem] md:rounded-[2.5rem] border border-sia-pink-light/30 focus:ring-4 focus:ring-sia-pink/5 focus:border-sia-pink/30 focus:outline-none transition-all text-lg md:text-xl font-serif italic text-sia-text resize-none placeholder:text-sia-text/20"
                     />
                     <div className="absolute bottom-6 right-8 text-[10px] font-bold text-sia-text/20 uppercase tracking-widest">Always Anonymous</div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-50 ml-6 block">Category</label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full h-16 px-8 bg-white/60 rounded-full border border-sia-pink-light/30 focus:outline-none focus:ring-4 focus:ring-sia-pink/5 text-xs font-bold uppercase tracking-widest appearance-none cursor-pointer"
-                      >
-                        {["Comfort", "Safety Warning", "Pads Availability", "Hostel Hack", "Office Tip", "Food Advice", "Emotional Support", "Nearby Help", "Washroom Update", "Emergency Tip"].map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-50 ml-6 block">Zone (Optional)</label>
-                      <select className="w-full h-16 px-8 bg-white/60 rounded-full border border-sia-pink-light/30 focus:outline-none focus:ring-4 focus:ring-sia-pink/5 text-xs font-bold uppercase tracking-widest appearance-none cursor-pointer">
-                        <option>Current Region</option>
-                        <option>Hostel Block</option>
-                        <option>Library</option>
-                        <option>Cafeteria</option>
-                        <option>Office Floor</option>
-                        <option>Campus Area</option>
-                      </select>
-                    </div>
-                  </div>
+
 
                   <button
                     onClick={() => {
@@ -922,29 +889,29 @@ const ArinCommunityPage = ({
   handlePostQuestion: (e: React.FormEvent) => void 
 }) => (
   <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
-    <div className="text-center mb-16">
-      <h2 className="font-serif italic font-bold text-6xl md:text-7xl text-sia-text mb-4 tracking-tight">ARIN Community</h2>
-      <p className="text-sia-text-muted max-w-2xl mx-auto font-light leading-relaxed text-lg">
+    <div className="text-center mb-12 md:mb-16">
+      <h2 className="font-serif italic font-bold text-5xl md:text-7xl text-sia-text mb-4 tracking-tight">ARIN Community</h2>
+      <p className="text-sia-text-muted max-w-2xl mx-auto font-light leading-relaxed text-base md:text-lg">
         Ask your region anonymously. Verified sisters nearby are ready to share their wisdom.
       </p>
     </div>
 
     {/* Ask Question Box */}
-    <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-sia-pink-light/30 mb-20">
+    <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-sia-pink-light/30 mb-16 md:20">
       <form onSubmit={handlePostQuestion} className="space-y-6">
         <textarea
           value={newQuestion}
           onChange={(e) => setNewQuestion(e.target.value)}
           placeholder="What's on your mind? Ask anonymously in your region..."
-          className="w-full h-48 p-8 bg-sia-cream/50 rounded-[2.5rem] border border-sia-pink-light/20 focus:outline-none focus:ring-2 focus:ring-sia-pink/20 transition-all text-lg font-light resize-none placeholder:text-sia-text-muted/40"
+          className="w-full h-32 md:h-48 p-6 md:p-8 bg-sia-cream/50 rounded-[1.5rem] md:rounded-[2.5rem] border border-sia-pink-light/20 focus:outline-none focus:ring-2 focus:ring-sia-pink/20 transition-all text-base md:text-lg font-light resize-none placeholder:text-sia-text-muted/40"
         />
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
             <MapPin className="w-4 h-4 text-sia-pink" /> Broadcasting to Central Region
           </div>
           <button
             type="submit"
-            className="px-10 py-4 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-xs shadow-lg hover:bg-sia-pink-dark transition-all hover:scale-105"
+            className="w-full md:w-auto px-10 py-4 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-xs shadow-lg hover:bg-sia-pink-dark transition-all hover:scale-105"
           >
             Post Question
           </button>
@@ -966,22 +933,22 @@ const ArinCommunityPage = ({
           key={q.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-10 rounded-[3rem] bg-white border border-sia-pink-light/30 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
+          className="p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-sia-pink-light/30 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
         >
           <div className="flex items-center gap-2 mb-6">
             <div className="w-2 h-2 rounded-full bg-sia-pink" />
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-40">Anonymous</span>
             <span className="text-[10px] text-gray-300 font-bold uppercase ml-auto tracking-widest">{q.time}</span>
           </div>
-          <h4 className="font-serif italic font-bold text-sia-text text-2xl md:text-3xl leading-snug mb-10 group-hover:text-sia-pink transition-colors">“{q.text}”</h4>
-          <div className="flex items-center justify-between pt-8 border-t border-dashed border-sia-pink-light/50">
+          <h4 className="font-serif italic font-bold text-sia-text text-xl md:text-3xl leading-snug mb-10 group-hover:text-sia-pink transition-colors">“{q.text}”</h4>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-8 border-t border-dashed border-sia-pink-light/50">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-sia-pink-light/30">
                 <MessageSquare className="w-4 h-4 text-sia-pink" />
               </div>
               <span className="text-xs font-bold text-sia-text-muted uppercase tracking-widest">{q.replies} Replies</span>
             </div>
-            <button className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink hover:bg-sia-pink hover:text-white px-6 py-2 rounded-full border border-sia-pink/20 transition-all">
+            <button className="w-full md:w-auto text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink hover:bg-sia-pink hover:text-white px-6 py-2 rounded-full border border-sia-pink/20 transition-all">
               Respond Anonymously
             </button>
           </div>
@@ -1012,10 +979,16 @@ export default function App() {
     { id: '2', user: 'Anonymous', text: 'Safe workout suggestions while on period?', time: '15m ago', replies: 1 },
   ]);
   const [newQuestion, setNewQuestion] = useState('');
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   };
 
   useEffect(() => {
@@ -1338,14 +1311,14 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="pt-32 px-6 max-w-4xl mx-auto flex flex-col items-center"
+            className="pt-32 px-6 max-w-4xl mx-auto flex flex-col items-center pb-40"
           >
             <SectionHeading 
               title="Sakhi Wellness"
               subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
             />
             
-            <div className="w-full max-w-2xl bg-white rounded-[3rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-sia-pink-light flex flex-col min-h-[600px] mb-20">
+            <div className="w-full max-w-2xl bg-white rounded-[3rem] p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-sia-pink-light flex flex-col h-[500px] md:h-[700px] mb-20 overflow-hidden">
               <div className="flex items-center gap-4 mb-10 p-5 rounded-[2rem] bg-sia-cream border border-sia-pink-light/30">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
                   <Sparkles className="w-6 h-6 text-white" />
@@ -1359,7 +1332,10 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide">
+              <div 
+                ref={chatContainerRef}
+                className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide px-2"
+              >
                 {chatMessages.map((msg, i) => (
                   <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
                 ))}
