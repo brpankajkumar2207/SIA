@@ -43,7 +43,7 @@ import { getWellnessAdvice } from './services/geminiService';
 // --- Types ---
 type AppState = 'idle' | 'finding' | 'peer-chat';
 type AppView = 'main' | 'profile' | 'settings';
-type Tab = 'home' | 'arin' | 'ai' | 'capsule';
+type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
 type Question = { id: string; user: string; text: string; time: string; replies: number };
 
@@ -360,26 +360,30 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
   const tabs: { id: Tab; icon: any; label: string }[] = [
     { id: 'home', icon: Shield, label: 'Home' },
     { id: 'arin', icon: MessageSquare, label: 'Arin' },
-    { id: 'ai', icon: Sparkles, label: 'AI' },
+    { id: 'sakhi', icon: Sparkles, label: 'Sakhi' },
     { id: 'capsule', icon: Heart, label: 'Capsule' },
 
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full px-6 pb-6 z-50 pointer-events-none">
-      <div className="max-w-md mx-auto h-16 glass rounded-full shadow-lg border border-white/40 flex items-center justify-around pointer-events-auto px-2">
+    <div className="fixed bottom-0 left-0 w-full h-20 bg-white/40 backdrop-blur-md border-t border-sia-pink-light z-50 px-6">
+      <div className="max-w-5xl mx-auto h-full flex items-center justify-around">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center gap-1 transition-all duration-300 ${
-              activeTab === tab.id ? 'text-sia-pink scale-110' : 'text-sia-text-muted opacity-40'
+            className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-4 py-2 ${
+              activeTab === tab.id ? 'text-sia-pink' : 'text-sia-text-muted opacity-40 hover:opacity-60'
             }`}
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-sia-pink/10' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>
             {activeTab === tab.id && (
-              <motion.div layoutId="nav-dot" className="w-1 h-1 bg-sia-pink rounded-full" />
+              <motion.div 
+                layoutId="nav-pill" 
+                className="absolute inset-0 bg-sia-pink/5 rounded-2xl -z-10" 
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
             )}
           </button>
         ))}
@@ -621,12 +625,12 @@ const SectionHeading = ({ title, subtitle, className = "" }: { title: string, su
   </div>
 );
 
-const ChatBubble = ({ message, isAI = false }: { message: string, isAI?: boolean }) => (
-  <div className={`flex ${isAI ? 'justify-start' : 'justify-end'} mb-4`}>
+const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: boolean }) => (
+  <div className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4`}>
     <div className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-sm flex items-start gap-3 ${
-      isAI ? 'bg-sia-cream rounded-tl-none text-sia-text border border-sia-pink-light/30' : 'bg-sia-pink-light rounded-br-none text-sia-text'
+      isSakhi ? 'bg-sia-cream rounded-tl-none text-sia-text border border-sia-pink-light/30' : 'bg-sia-pink-light rounded-br-none text-sia-text'
     }`}>
-      {isAI && <div className="w-2 h-2 rounded-full bg-sia-pink mt-1.5 shrink-0" />}
+      {isSakhi && <div className="w-2 h-2 rounded-full bg-sia-pink mt-1.5 shrink-0" />}
       <p className="text-sm leading-relaxed">{message}</p>
     </div>
   </div>
@@ -1093,10 +1097,19 @@ export default function App() {
 
       <AnimatePresence>
         {showProfileMenu && (
-          <ProfileMenu 
-            onClose={() => setShowProfileMenu(false)} 
-            onNavigate={handleMenuNavigate}
-          />
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[105] bg-transparent" 
+              onClick={() => setShowProfileMenu(false)} 
+            />
+            <ProfileMenu 
+              onClose={() => setShowProfileMenu(false)} 
+              onNavigate={handleMenuNavigate}
+            />
+          </>
         )}
       </AnimatePresence>
 
@@ -1233,7 +1246,7 @@ export default function App() {
                     <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10" />
                     <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Flash Wisdom</h3>
                     <p className="text-white/80 font-light text-sm leading-relaxed mb-4">
-                      "Self-care is how you take your power back." - Quick wellness insights powered by SIA AI.
+                      "Self-care is how you take your power back." - Quick wellness insights powered by Sakhi.
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="h-1 w-12 bg-white/30 rounded-full overflow-hidden">
@@ -1279,26 +1292,27 @@ export default function App() {
             <TimeCapsulePage />
           </motion.div>
         )}
-        {activeTab === 'ai' && (
+
+        {activeTab === 'sakhi' && (
           <motion.div
-            key="ai"
+            key="sakhi"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="pt-32 px-6 max-w-4xl mx-auto flex flex-col items-center"
           >
             <SectionHeading 
-              title="SIA Wellness AI"
+              title="Sakhi Wellness"
               subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
             />
-
+            
             <div className="w-full max-w-2xl bg-white rounded-[3rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-sia-pink-light flex flex-col min-h-[600px] mb-20">
               <div className="flex items-center gap-4 mb-10 p-5 rounded-[2rem] bg-sia-cream border border-sia-pink-light/30">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sia-text italic font-serif">SIA Companion</h4>
+                  <h4 className="font-bold text-sia-text italic font-serif">Sakhi Companion</h4>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                     Ready to support
@@ -1308,13 +1322,13 @@ export default function App() {
 
               <div className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide">
                 {chatMessages.map((msg, i) => (
-                  <ChatBubble key={i} isAI={msg.role === 'ai'} message={msg.content} />
+                  <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
                 ))}
                 {isTyping && (
                   <div className="flex justify-start mb-4">
                     <div className="bg-sia-cream px-5 py-3 rounded-[1.5rem] rounded-tl-none border border-sia-pink-light/30 flex items-center gap-3">
                       <Loader2 className="w-4 h-4 text-sia-pink animate-spin" />
-                      <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest">Sia is thinking...</span>
+                      <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest">Sakhi is thinking...</span>
                     </div>
                   </div>
                 )}
@@ -1341,7 +1355,7 @@ export default function App() {
                   <input 
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Ask Sia anything about period wellness..." 
+                    placeholder="Ask Sakhi anything about period wellness..." 
                     disabled={isTyping}
                     className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
                   />
@@ -1356,7 +1370,7 @@ export default function App() {
               </div>
             </div>
           </motion.div>
-            )}
+        )}
           </>
         )}
       </AnimatePresence>
