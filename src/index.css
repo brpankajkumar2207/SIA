@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-sia-pink: #D81B60;
+  --color-sia-pink-light: #FCE4EC;
+  --color-sia-peach: #FF8A80;
+  --color-sia-cream: #FFF9F8;
+  --color-sia-warm-bg: #FDF0EE;
+  --color-sia-text: #4A4242;
+  --color-sia-text-muted: #7A6E6E;
+  
+  --radius-sia: 2.5rem;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+body {
+  background-color: var(--color-sia-cream);
+  color: var(--color-sia-text);
+  overflow-x: hidden;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-sia-pink-light);
+}
+
+.pulsate {
+  animation: pulse-ring 3s cubic-bezier(0.25, 1, 0.2, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}

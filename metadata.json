@@ -1,0 +1,8 @@
+{
+  "name": "SIA - Private Wellness Support",
+  "description": "An emotionally safe, private menstrual emergency and wellness platform for women.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}
