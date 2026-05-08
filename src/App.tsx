@@ -78,7 +78,7 @@ const Navbar = ({ onProfile, onBack, showBack = false, activeView }: { onProfile
 );
 
 
-const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate: (view: AppView) => void }) => {
+const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate: (view: AppView | 'logout') => void }) => {
   const menuItems = [
     { id: 'profile', icon: User, label: 'Profile', desc: 'Personal details, trust level, and activity' },
     { id: 'settings', icon: Settings, label: 'Settings', desc: 'Privacy, notifications, and preferences' },
@@ -99,7 +99,7 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
             key={item.id}
             onClick={() => {
               if (item.id === 'logout') {
-                onNavigate('main'); // Signal logout trigger
+                onNavigate('logout'); // Signal logout trigger
               } else {
                 onNavigate(item.id as AppView);
               }
@@ -832,13 +832,13 @@ const TimeCapsulePage = () => {
               >
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
                 
-                <button onClick={() => setShowWriteModal(false)} className="absolute top-10 right-10 p-3 rounded-full hover:bg-sia-pink-light/30 text-sia-text/40 hover:text-sia-pink transition-all">
-                  <X className="w-6 h-6" />
+                <button onClick={() => setShowWriteModal(false)} className="absolute top-6 right-6 md:top-10 md:right-10 p-2 md:p-3 rounded-full hover:bg-sia-pink-light/30 text-sia-text/40 hover:text-sia-pink transition-all z-[110]">
+                  <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
 
                 <div className="mb-10">
-                  <h3 className="font-serif italic font-bold text-4xl mb-3 text-sia-text">Leave a Kindness 💗</h3>
-                  <p className="text-sia-text-muted text-base font-light italic">“Women quietly leaving care, comfort, and wisdom for those who follow.”</p>
+                  <h3 className="font-serif italic font-bold text-3xl md:text-4xl mb-3 text-sia-text pr-12">Leave a Kindness 💗</h3>
+                  <p className="text-sia-text-muted text-sm md:text-base font-light italic">“Women quietly leaving care, comfort, and wisdom for those who follow.”</p>
                 </div>
 
                 <div className="space-y-8">
@@ -850,7 +850,6 @@ const TimeCapsulePage = () => {
                       placeholder="What helped you during a difficult moment? Share something comforting or useful..."
                       className="w-full h-32 md:h-48 p-6 md:p-10 bg-white/50 rounded-[1.5rem] md:rounded-[2.5rem] border border-sia-pink-light/30 focus:ring-4 focus:ring-sia-pink/5 focus:border-sia-pink/30 focus:outline-none transition-all text-lg md:text-xl font-serif italic text-sia-text resize-none placeholder:text-sia-text/20"
                     />
-                    <div className="absolute bottom-6 right-8 text-[10px] font-bold text-sia-text/20 uppercase tracking-widest">Always Anonymous</div>
                   </div>
 
 
@@ -865,7 +864,6 @@ const TimeCapsulePage = () => {
                     Seal in Capsule 💗
                   </button>
                   
-                  <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text/30">Your note will remain completely anonymous</p>
                 </div>
               </motion.div>
             </motion.div>
@@ -1071,7 +1069,7 @@ export default function App() {
   };
 
   const handleMenuNavigate = (view: AppView | 'logout') => {
-    if (view === 'main') { // Used as logout signal in my ProfileMenu implementation
+    if (view === 'logout') {
       setShowLogoutModal(true);
     } else {
       setActiveView(view);
