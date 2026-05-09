@@ -573,9 +573,11 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                   </button>
                 </>
               )}
-          <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
+            </div>
+            <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
+          </div>
+          <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
         </div>
-        <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
       </div>
     </div>
   );
