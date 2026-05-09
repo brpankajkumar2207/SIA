@@ -5,8 +5,9 @@
 import { buildRAGPrompt } from './ragService';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+// Vite uses import.meta.env.VITE_ prefixed variables
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ── Timeout helper ────────────────────────────────────────────────────────────
@@ -144,3 +145,61 @@ export async function askSakhiKnows(userMessage, conversationHistory = []) {
     };
   }
 }
+
+// ── ARIN MODERATION ──────────────────────────────────────────────────────────
+export async function moderateArinResponse(questionText, responseText) {
+  const moderationPrompt = `
+You are a safety moderator for SAKHI, an Indian women's menstrual wellness community app.
+A community member has submitted the following response to a period health question. Your job is to verify it is safe, helpful, and appropriate before it is shown to other users.
+
+ORIGINAL QUESTION:
+\${questionText}
+
+SUBMITTED RESPONSE:
+\${responseText}
+
+Evaluate this response against ALL of the following criteria:
+SAFETY CHECKS (any failure = REJECT):
+1. Does it recommend dangerous, extreme, or unverified medical treatments?
+2. Does it recommend prescription drugs or specific medication dosages?
+3. Does it contain content that could cause physical harm if followed?
+4. Does it contain hate speech, body shaming, or discriminatory language?
+5. Does it contain sexually explicit or inappropriate content?
+6. Does it attempt to collect personal information or contact details?
+7. Does it promote self-harm or dangerous restriction behaviours?
+8. Does it spread medical misinformation that contradicts established safety guidelines?
+
+QUALITY CHECKS (failure = NEEDS_IMPROVEMENT, not rejection):
+9. Is the response relevant to the question asked?
+10. Is it supportive and non-judgmental in tone?
+11. Is it at least one complete, meaningful sentence?
+
+Respond ONLY in this exact JSON format, no other text:
+{
+  "verdict": "APPROVED" | "REJECTED" | "NEEDS_IMPROVEMENT",
+  "reason": "brief reason if not APPROVED, empty string if APPROVED",
+  "safe_summary": "a 1-sentence warm summary of what the response says, rewritten in your own words if approved — for use as a preview",
+  "show_original": true | false
+}
+`;
+
+  // Fallback for local development if keys are missing
+  if (!GROQ_API_KEY && !GEMINI_API_KEY) {
+    console.warn('[Moderation] No API keys found. Auto-approving for development.');
+    return { verdict: 'APPROVED', reason: '', safe_summary: responseText.slice(0, 50) + '...', show_original: true };
+  }
+
+  try {
+    const rawResult = await callGroq(responseText, moderationPrompt, []);
+    const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : '{"verdict":"REJECTED", "reason":"Parse error"}');
+  } catch (err) {
+    try {
+      const rawResult = await callGemini(responseText, moderationPrompt, []);
+      const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+      return JSON.parse(jsonMatch ? jsonMatch[0] : '{"verdict":"REJECTED", "reason":"Parse error"}');
+    } catch (fallbackErr) {
+      return { verdict: 'REJECTED', reason: 'Moderation service unavailable', safe_summary: '', show_original: false };
+    }
+  }
+}

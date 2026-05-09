@@ -38,7 +38,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { askSakhiKnows } from './services/sakhiAI';
+import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
 
 
 
@@ -47,7 +48,9 @@ type AppState = 'idle' | 'finding' | 'peer-chat';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
-type Question = { id: string; user: string; text: string; time: string; replies: number };
+type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; timestamp: number };
+type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
+type Zone = ArinZone;
 
 // --- Components ---
 // ... (rest of the components stay same, except specific chat logic)
@@ -879,22 +882,30 @@ const TimeCapsulePage = () => {
 };
 
 // Arin Page - Community Forum
+// Arin Page - Community Forum
 const ArinCommunityPage = ({ 
   questions, 
   newQuestion, 
   setNewQuestion, 
-  handlePostQuestion 
+  handlePostQuestion,
+  onRespond,
+  currentZone,
+  responses
 }: { 
   questions: Question[], 
   newQuestion: string, 
   setNewQuestion: (v: string) => void, 
-  handlePostQuestion: (e: React.FormEvent) => void 
+  handlePostQuestion: (e: React.FormEvent) => void,
+  onRespond: (q: Question) => void,
+  onHeartResponse: (id: string) => void,
+  currentZone: Zone,
+  responses: ArinResponse[]
 }) => (
   <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
     <div className="text-center mb-12 md:mb-16">
       <h2 className="font-serif italic font-bold text-5xl md:text-7xl text-sia-text mb-4 tracking-tight">ARIN Community</h2>
       <p className="text-sia-text-muted max-w-2xl mx-auto font-light leading-relaxed text-base md:text-lg">
-        Ask your region anonymously. Verified sisters nearby are ready to share their wisdom.
+        Anonymous peer-support in your region. Your wisdom stays in your city.
       </p>
     </div>
 
@@ -909,7 +920,7 @@ const ArinCommunityPage = ({
         />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
-            <MapPin className="w-4 h-4 text-sia-pink" /> Broadcasting to Central Region
+            <MapPin className="w-4 h-4 text-sia-pink" /> BROADCASTING TO {currentZone.display_name}
           </div>
           <button
             type="submit"
@@ -930,7 +941,14 @@ const ArinCommunityPage = ({
           Live Updates
         </div>
       </div>
-      {questions.map((q) => (
+      
+      {questions.filter(q => q.zone_id === currentZone.id).length === 0 && (
+        <div className="p-20 text-center bg-white/40 rounded-[3rem] border border-dashed border-sia-pink-light/40">
+           <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.display_name}. This space is safe and anonymous.</p>
+        </div>
+      )}
+
+      {questions.filter(q => q.zone_id === currentZone.id).map((q) => (
         <motion.div
           key={q.id}
           initial={{ opacity: 0, y: 20 }}
@@ -938,11 +956,47 @@ const ArinCommunityPage = ({
           className="p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-sia-pink-light/30 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
         >
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-2 h-2 rounded-full bg-sia-pink" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-40">Anonymous</span>
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Anonymous</span>
             <span className="text-[10px] text-gray-300 font-bold uppercase ml-auto tracking-widest">{q.time}</span>
           </div>
           <h4 className="font-serif italic font-bold text-sia-text text-xl md:text-3xl leading-snug mb-10 group-hover:text-sia-pink transition-colors">“{q.text}”</h4>
+          
+          {/* Responses Sub-feed */}
+          <div className="space-y-4 mb-8">
+            {responses.filter(r => r.question_id === q.id).map(r => (
+              <div key={r.id} className={`p-5 rounded-[1.8rem] border relative group/res transition-all ${r.verdict === 'REJECTED' || r.verdict === 'NEEDS_IMPROVEMENT' ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-sia-cream/30 border-sia-pink-light/20'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-3 h-3 text-sia-pink" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-sia-pink opacity-60">Anonymous Sister</span>
+                  <span className="text-[9px] text-gray-300 ml-auto uppercase font-bold">{r.time}</span>
+                </div>
+                
+                {r.verdict === 'APPROVED' ? (
+                  <>
+                    <p className="text-sm text-sia-text font-light leading-relaxed">
+                      {r.show_original ? r.text : r.safe_summary}
+                    </p>
+                    <div className="mt-3 flex items-center justify-end">
+                      <button 
+                        onClick={() => onHeartResponse(r.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-sia-pink-light/30 hover:border-sia-pink/50 transition-all active:scale-90"
+                      >
+                        <Heart className={`w-3 h-3 ${r.likes > 0 ? 'fill-sia-pink text-sia-pink' : 'text-sia-pink/40'}`} />
+                        <span className="text-[10px] font-bold text-sia-pink">{r.likes || 0}</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 py-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    <p className="text-xs font-bold text-amber-600 uppercase tracking-widest">This response could not be verified for safety</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-8 border-t border-dashed border-sia-pink-light/50">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-sia-pink-light/30">
@@ -950,7 +1004,10 @@ const ArinCommunityPage = ({
               </div>
               <span className="text-xs font-bold text-sia-text-muted uppercase tracking-widest">{q.replies} Replies</span>
             </div>
-            <button className="w-full md:w-auto text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink hover:bg-sia-pink hover:text-white px-6 py-2 rounded-full border border-sia-pink/20 transition-all">
+            <button 
+              onClick={() => onRespond(q)}
+              className="w-full md:w-auto text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink hover:bg-sia-pink hover:text-white px-8 py-3 rounded-full border border-sia-pink/20 transition-all shadow-sm active:scale-95"
+            >
               Respond Anonymously
             </button>
           </div>
@@ -959,6 +1016,163 @@ const ArinCommunityPage = ({
     </div>
   </div>
 );
+
+const ArinRespondModal = ({ 
+  question, 
+  onClose, 
+  onPost,
+  input,
+  setInput,
+  isVerifying
+}: { 
+  question: Question, 
+  onClose: () => void, 
+  onPost: (e: React.FormEvent) => void,
+  input: string,
+  setInput: (v: string) => void,
+  isVerifying: boolean
+}) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[150] bg-black/10 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-6"
+    onClick={onClose}
+  >
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      className="w-full max-w-2xl bg-white rounded-t-[3rem] md:rounded-[3rem] p-8 md:p-12 shadow-2xl relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button onClick={onClose} className="absolute top-8 right-8 p-3 rounded-full hover:bg-sia-cream text-sia-text/20 hover:text-sia-pink transition-all">
+        <X className="w-6 h-6" />
+      </button>
+
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-red-500">Responding to Peer</span>
+        </div>
+        <h3 className="font-serif italic font-bold text-2xl text-sia-text leading-tight mb-2">“{question.text}”</h3>
+        <p className="text-[10px] text-sia-text-muted uppercase tracking-widest font-bold opacity-40">Your response will undergo AI safety verification</p>
+      </div>
+
+      <form onSubmit={onPost} className="space-y-6">
+        <textarea
+          autoFocus
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Share your wisdom or comfort anonymously..."
+          className="w-full h-40 p-6 md:p-8 bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 focus:outline-none focus:ring-4 focus:ring-sia-pink/5 transition-all text-lg font-light resize-none"
+        />
+        <button
+          type="submit"
+          disabled={isVerifying || !input.trim()}
+          className="w-full h-16 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.2em] text-xs shadow-lg hover:bg-sia-pink-dark transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+        >
+          {isVerifying ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" /> Verifying Safety...
+            </>
+          ) : (
+            'Post Anonymous Response'
+          )}
+        </button>
+      </form>
+    </motion.div>
+  </motion.div>
+);
+
+const LocationExplainerModal = ({ 
+  onAllow, 
+  onManual 
+}: { 
+  onAllow: () => void, 
+  onManual: () => void 
+}) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[200] bg-black/20 backdrop-blur-xl flex items-center justify-center p-6"
+  >
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className="w-full max-w-md bg-white rounded-[3rem] p-10 text-center shadow-2xl border border-sia-pink-light/30"
+    >
+      <div className="w-20 h-20 bg-sia-pink-light/30 rounded-full flex items-center justify-center mx-auto mb-8">
+        <MapPin className="w-10 h-10 text-sia-pink" />
+      </div>
+      <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-4 tracking-tight">Find Your ARIN City</h3>
+      <p className="text-sia-text-muted font-light leading-relaxed mb-10">
+        ARIN connects you with verified sisters in your city — anonymously. 
+        Your exact location is never stored.
+      </p>
+      <div className="space-y-4">
+        <button
+          onClick={onAllow}
+          className="w-full py-5 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-[10px] shadow-lg hover:bg-sia-pink-dark transition-all"
+        >
+          Allow Location Access
+        </button>
+        <button
+          onClick={onManual}
+          className="w-full py-5 border border-sia-pink/20 text-sia-pink rounded-full font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-cream transition-all"
+        >
+          Choose My City Manually
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+const ManualZonePickerModal = ({ 
+  onSelect, 
+  onClose 
+}: { 
+  onSelect: (z: Zone) => void, 
+  onClose: () => void 
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] bg-black/20 backdrop-blur-xl flex items-center justify-center p-6"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative max-h-[80vh] overflow-y-auto scrollbar-hide"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-8 right-8 p-3 rounded-full hover:bg-sia-cream text-sia-text/20">
+          <X className="w-6 h-6" />
+        </button>
+
+        <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-8 tracking-tight">Select Your City</h3>
+        
+        <div className="space-y-4">
+          {PREDEFINED_ZONES.map(z => (
+            <button
+              key={z.id}
+              onClick={() => onSelect(z)}
+              className="w-full p-6 text-left bg-sia-cream/30 hover:bg-sia-pink hover:text-white rounded-[1.5rem] transition-all group flex items-center justify-between"
+            >
+              <span className="font-bold text-sm uppercase tracking-widest">{z.display_name}</span>
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('idle');
@@ -976,10 +1190,45 @@ export default function App() {
   const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [provider, setProvider] = useState('Groq');
 
-  const [questions, setQuestions] = useState<Question[]>([
-    { id: '1', user: 'Anonymous', text: 'What helps with painful cramps in hostel?', time: '2m ago', replies: 3 },
-    { id: '2', user: 'Anonymous', text: 'Safe workout suggestions while on period?', time: '15m ago', replies: 1 },
-  ]);
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    const saved = localStorage.getItem('arin_questions');
+    if (saved) return JSON.parse(saved);
+    
+    // Default mock data for testing
+    return [
+      { id: 'm1', user: 'Anonymous', text: 'Any good pharmacies open 24/7 in Bangalore for emergency period supplies?', time: '10m ago', replies: 1, zone_id: 'city_bangalore', timestamp: Date.now() - 600000 },
+      { id: 'm2', user: 'Anonymous', text: 'Best home remedies for severe bloating? Mumbai heat is making it worse.', time: '1h ago', replies: 0, zone_id: 'city_mumbai', timestamp: Date.now() - 3600000 },
+    ];
+  });
+  const [arinResponses, setArinResponses] = useState<ArinResponse[]>(() => {
+    const saved = localStorage.getItem('arin_responses');
+    if (saved) return JSON.parse(saved);
+
+    return [
+      { 
+        id: 'r1', 
+        question_id: 'm1', 
+        text: 'Apollo Pharmacy in Indiranagar is 24/7! Stay safe sister.', 
+        time: '5m ago', 
+        verdict: 'APPROVED', 
+        safe_summary: '', 
+        show_original: true, 
+        likes: 2, 
+        timestamp: Date.now() - 300000 
+      }
+    ];
+  });
+  const [currentZone, setCurrentZone] = useState<Zone>(() => {
+    const saved = sessionStorage.getItem('arin_zone');
+    return saved ? JSON.parse(saved) : PREDEFINED_ZONES[0];
+  });
+  const [showRespondModal, setShowRespondModal] = useState(false);
+  const [showLocationExplainer, setShowLocationExplainer] = useState(false);
+  const [showManualZonePicker, setShowManualZonePicker] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [responseInput, setResponseInput] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -994,8 +1243,68 @@ export default function App() {
   };
 
   useEffect(() => {
+    localStorage.setItem('arin_questions', JSON.stringify(questions));
+  }, [questions]);
+
+  useEffect(() => {
+    localStorage.setItem('arin_responses', JSON.stringify(arinResponses));
+  }, [arinResponses]);
+
+  // Sync state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'arin_questions' && e.newValue) {
+        setQuestions(JSON.parse(e.newValue));
+      }
+      if (e.key === 'arin_responses' && e.newValue) {
+        setArinResponses(JSON.parse(e.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
+
+  useEffect(() => {
+    if (activeTab === 'arin') {
+      handleInitialLocation();
+    }
+  }, [activeTab]);
+
+  const handleInitialLocation = async () => {
+    // Check permissions first
+    if (navigator.permissions) {
+      const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+      if (permission.state === 'prompt') {
+        setShowLocationExplainer(true);
+        return;
+      } else if (permission.state === 'denied') {
+        setShowManualZonePicker(true);
+        return;
+      }
+    }
+    
+    setIsLocating(true);
+    const zone = await getZoneWithCache(() => {
+      setShowManualZonePicker(true);
+    });
+    if (zone) setCurrentZone(zone);
+    setIsLocating(false);
+  };
+
+  const handleAllowLocation = async () => {
+    setShowLocationExplainer(false);
+    setIsLocating(true);
+    const zone = await getZoneWithCache(() => {
+      setShowManualZonePicker(true);
+    });
+    if (zone) setCurrentZone(zone);
+    setIsLocating(false);
+  };
 
   const handleSendMessage = async (msg?: string) => {
     const textToSend = msg || userInput;
@@ -1051,12 +1360,52 @@ export default function App() {
     const q: Question = {
       id: Date.now().toString(),
       user: 'Anonymous',
-      text: newQuestion,
+      text: newQuestion.trim(),
       time: 'Just now',
-      replies: 0
+      replies: 0,
+      zone_id: currentZone.id,
+      timestamp: Date.now()
     };
     setQuestions([q, ...questions]);
     setNewQuestion('');
+  };
+
+  const handlePostResponse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!responseInput.trim() || !selectedQuestion) return;
+    
+    setIsVerifying(true);
+    try {
+      const moderation = await moderateArinResponse(selectedQuestion.text, responseInput);
+      
+      if (moderation.verdict === 'REJECTED') {
+        alert("Your response could not be posted: " + (moderation.reason || "Guidelines violation."));
+        setIsVerifying(false);
+        return;
+      }
+
+      const res: ArinResponse = {
+        id: Date.now().toString(),
+        question_id: selectedQuestion.id,
+        text: responseInput,
+        time: 'Just now',
+        verdict: moderation.verdict,
+        safe_summary: moderation.safe_summary || '',
+        show_original: moderation.show_original ?? true,
+        likes: 0,
+        timestamp: Date.now()
+      };
+
+      setArinResponses([res, ...arinResponses]);
+      setQuestions(questions.map(q => q.id === selectedQuestion.id ? { ...q, replies: q.replies + 1 } : q));
+      setResponseInput('');
+      setShowRespondModal(false);
+    } catch (err) {
+      console.error("Moderation failed", err);
+      alert("Moderation service is busy. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleSOSClick = () => {
@@ -1292,6 +1641,15 @@ export default function App() {
               newQuestion={newQuestion}
               setNewQuestion={setNewQuestion}
               handlePostQuestion={handlePostQuestion}
+              onRespond={(q) => {
+                setSelectedQuestion(q);
+                setShowRespondModal(true);
+              }}
+              onHeartResponse={(id) => {
+                setArinResponses(arinResponses.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
+              }}
+              currentZone={currentZone}
+              responses={arinResponses}
             />
           </motion.div>
         )}
@@ -1412,6 +1770,36 @@ export default function App() {
               setShowLogoutModal(false);
               window.location.reload(); // Simple mock logout
             }}
+          />
+        )}
+        {showRespondModal && selectedQuestion && (
+          <ArinRespondModal
+            question={selectedQuestion}
+            onClose={() => setShowRespondModal(false)}
+            onPost={handlePostResponse}
+            input={responseInput}
+            setInput={setResponseInput}
+            isVerifying={isVerifying}
+          />
+        )}
+        {showLocationExplainer && (
+          <LocationExplainerModal
+            onAllow={handleAllowLocation}
+            onManual={() => {
+              setShowLocationExplainer(false);
+              setShowManualZonePicker(true);
+            }}
+          />
+        )}
+        {showManualZonePicker && (
+          <ManualZonePickerModal
+            onSelect={(z) => {
+              setCurrentZone(z);
+              setShowManualZonePicker(false);
+              sessionStorage.setItem('arin_zone', JSON.stringify(z));
+              sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
+            }}
+            onClose={() => setShowManualZonePicker(false)}
           />
         )}
       </AnimatePresence>
