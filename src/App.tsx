@@ -60,7 +60,8 @@ import {
   updateDoc, 
   increment,
   setDoc,
-  getDocs
+  getDocs,
+  deleteDoc
 } from "firebase/firestore";
 
 
@@ -116,7 +117,19 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
       return;
     }
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Generate and store Session ID
+      const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
+      localStorage.setItem('sia_session_id', sessionId);
+      
+      if (db) {
+        await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
+          sessionId: sessionId,
+          timestamp: Date.now()
+        });
+      }
+
       onLogin();
     } catch (err: any) {
       console.error(err);
@@ -232,7 +245,19 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
       return;
     }
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Generate and store Session ID
+      const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
+      localStorage.setItem('sia_session_id', sessionId);
+      
+      if (db) {
+        await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
+          sessionId: sessionId,
+          timestamp: Date.now()
+        });
+      }
+
       onSignup();
     } catch (err: any) {
       console.error(err);
@@ -1636,6 +1661,29 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // --- Session Monitor (One Active Session Per User) ---
+  useEffect(() => {
+    if (!user || !db || !auth) return;
+
+    const sessionRef = doc(db, "user_sessions", user.uid);
+    const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const localSessionId = localStorage.getItem('sia_session_id');
+        
+        // If the database has a session ID and it doesn't match our local one
+        if (data.sessionId && localSessionId && data.sessionId !== localSessionId) {
+          console.warn("🔒 Security Alert: Account accessed from another device. Logging out.");
+          window.alert("You have been securely logged out because your account was accessed from a new device.");
+          localStorage.removeItem('sia_session_id');
+          signOut(auth).catch(e => console.error("Auto-logout error:", e));
+        }
+      }
+    });
+
+    return () => unsubscribeSession();
+  }, [user]);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [activeView, setActiveView] = useState<AppView>('main');
   const [showSOSModal, setShowSOSModal] = useState(false);
@@ -1736,8 +1784,7 @@ export default function App() {
           
           console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
 
-          // Temporarily removed `isOthers` requirement so you can see the alert pop up on your own screen while testing
-          if (isRecent && currentZone.center.lat !== 0) {
+          if (isOthers && isRecent && currentZone.center.lat !== 0) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
             console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
             if (dist <= 0.1) {
@@ -2020,6 +2067,17 @@ export default function App() {
         setShowLogoutModal(false);
         return;
       }
+      
+      // Remove location from active users before logging out
+      if (user && db) {
+        try {
+          await deleteDoc(doc(db, "users_location", user.uid));
+          console.log("🗑️ Location removed from active users list.");
+        } catch (e) {
+          console.error("Failed to remove location on logout", e);
+        }
+      }
+
       await signOut(auth);
       setShowLogoutModal(false);
     } catch (err) {
