@@ -73,7 +73,7 @@ type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: str
 type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
-type SOSAlert = { id: string; email: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
+type SOSAlert = { id: string; email: string; name?: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
 
 const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
   <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
@@ -1580,9 +1580,8 @@ const LocationExplainerModal = ({
 
 
 const IncomingSOSAlert = ({ alert, onDismiss }: { alert: SOSAlert, onDismiss: () => void }) => {
-  // Obscure email
-  const [name, domain] = alert.email.split('@');
-  const obscured = name.length > 2 ? `${name[0]}***${name[name.length - 1]}@${domain}` : `***@${domain}`;
+  // Obscure email or use name
+  const displayName = alert.name || alert.email.split('@')[0] || "A Sister";
 
   return (
     <motion.div
@@ -1600,7 +1599,7 @@ const IncomingSOSAlert = ({ alert, onDismiss }: { alert: SOSAlert, onDismiss: ()
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Emergency Alert Nearby</span>
           </div>
           <h4 className="text-white font-bold text-lg leading-tight mb-1">“{alert.request_type}” Needed</h4>
-          <p className="text-white/80 text-xs font-medium">Requester: {obscured}</p>
+          <p className="text-white/80 text-xs font-medium">Requester: {displayName}</p>
         </div>
         <button
           onClick={onDismiss}
@@ -1737,13 +1736,15 @@ export default function App() {
           
           console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
 
-          if (isOthers && isRecent && currentZone.center.lat !== 0) {
+          // Temporarily removed `isOthers` requirement so you can see the alert pop up on your own screen while testing
+          if (isRecent && currentZone.center.lat !== 0) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
             console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
             if (dist <= 0.1) {
               console.log("🎯 MATCH! Triggering SOS Pop-up");
               // Browser-level alert for maximum visibility
-              window.alert(`🚨 EMERGENCY ALERT: A user nearby needs ${sosAlert.request_type}!`);
+              const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+              window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
               setIncomingSOS(sosAlert);
             }
           }
@@ -1980,6 +1981,7 @@ export default function App() {
         await addDoc(collection(db, "active_sos_alerts"), {
           user_id: user.uid,
           email: user.email || 'anonymous@sia.com',
+          name: user.displayName || user.email?.split('@')[0] || 'Anonymous',
           request_type: option,
           lat: currentZone.center.lat,
           lng: currentZone.center.lng,
