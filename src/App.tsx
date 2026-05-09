@@ -1789,6 +1789,7 @@ export default function App() {
   
   // Track which SOS alerts have already triggered a pop-up to avoid spamming
   const alertedSOSIds = useRef<Set<string>>(new Set());
+  const sessionStartTime = useRef<number>(Date.now());
 
   useEffect(() => {
     if (!auth) {
@@ -1799,6 +1800,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
+        sessionStartTime.current = Date.now();
         setAppState('idle');
       } else {
         setUser(null);
@@ -1926,12 +1928,13 @@ export default function App() {
           const alertData = change.doc.data();
           const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
           
-          // Filter: Others only, recent only, not already alerted
+          // Filter: Others only, recent only (within 5 mins), NOT from before we logged in, and not already alerted
           const isOthers = sosAlert.user_id !== user.uid;
           const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
+          const isNewForUs = sosAlert.timestamp >= sessionStartTime.current - 5000; // 5s grace for latency
           const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
           
-          if (isOthers && isRecent && !alreadyAlerted && currentZone.center.lat !== 0) {
+          if (isOthers && isRecent && isNewForUs && !alreadyAlerted && currentZone.center.lat !== 0) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
             
             if (dist <= 0.1) {
