@@ -12,7 +12,8 @@ import {
   updateDoc as realUpdateDoc,
   increment as realIncrement,
   setDoc as realSetDoc,
-  runTransaction as realRunTransaction
+  runTransaction as realRunTransaction,
+  deleteDoc as realDeleteDoc
 } from 'firebase/firestore';
 
 type Doc = { id: string; data: any };
@@ -53,15 +54,15 @@ export async function addDoc(collRef: any, data: any) {
   return { id };
 }
 
-export function query(...args: any[]) {
+export function query(collectionRef: any, ...constraints: any[]) {
   if (db) {
-    return realQuery(...args);
+    return realQuery(collectionRef, ...constraints);
   }
-  return args[0]; // our mock query is just the collection name
+  return collectionRef; // our mock query is just the collection name
 }
 
-export function where(...args: any[]) { return realWhere(...args); }
-export function orderBy(...args: any[]) { return realOrderBy(...args); }
+export function where(fieldPath: any, opStr: any, value: any) { return realWhere(fieldPath, opStr, value); }
+export function orderBy(fieldPath: any, directionStr?: any) { return realOrderBy(fieldPath, directionStr); }
 
 export function onSnapshot(queryRef: any, cb: (snapshot: any) => void, errCb?: (e: any) => void) {
   if (db) {
@@ -124,19 +125,27 @@ export function increment(by = 1) {
   return { _method: 'increment', _by: by };
 }
 
-export async function setDoc(docRef: any, data: any) {
+export async function setDoc(docRef: any, data: any, options?: any) {
   if (db) {
-    return realSetDoc(docRef, data);
+    return realSetDoc(docRef, data, options);
   }
   const { collectionName, id } = docRef;
   mockStore[collectionName] = mockStore[collectionName] || [];
   const idx = mockStore[collectionName].findIndex((d) => d.id === id);
-  if (idx >= 0) mockStore[collectionName][idx].data = data;
-  else mockStore[collectionName].push({ id, data });
+  if (options?.merge && idx >= 0) {
+    // merge mode: update existing document
+    mockStore[collectionName][idx].data = { ...mockStore[collectionName][idx].data, ...data };
+  } else if (idx >= 0) {
+    // replace mode
+    mockStore[collectionName][idx].data = data;
+  } else {
+    // new document
+    mockStore[collectionName].push({ id, data });
+  }
   trigger(collectionName);
 }
 
-export { Doc };
+export type { Doc };
 
 export async function getDocs(queryRef: any) {
   if (db) {
@@ -174,4 +183,17 @@ export async function runTransaction(dbInstance: any, callback: (t: any) => Prom
     }
   };
   return callback(tx);
+}
+
+export async function deleteDoc(docRef: any) {
+  if (db) {
+    return realDeleteDoc(docRef);
+  }
+  const { collectionName, id } = docRef;
+  const col = mockStore[collectionName] || [];
+  const idx = col.findIndex(d => d.id === id);
+  if (idx >= 0) {
+    col.splice(idx, 1);
+    trigger(collectionName);
+  }
 }

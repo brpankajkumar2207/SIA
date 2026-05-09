@@ -10,6 +10,7 @@ import {
 export type FirebaseUser = {
   uid: string;
   email?: string | null;
+  displayName?: string | null;
 };
 
 let mockCurrentUser: FirebaseUser | null = null;
