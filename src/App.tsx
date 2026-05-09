@@ -38,8 +38,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-<<<<<<< HEAD
-import { askSakhiKnows } from './services/sakhiAI';
+import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
 import { auth } from './firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -48,10 +48,6 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
-=======
-import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
->>>>>>> dcfae4e5fd3a11404b25cabd0d8fc589680cc88e
 
 
 
