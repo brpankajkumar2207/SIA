@@ -717,16 +717,17 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md overflow-y-auto"
     >
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+      <div className="min-h-full p-6 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
 
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden my-auto"
-      >
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden shrink-0 my-8"
+        >
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
 
         <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
           <MessageCircle className="w-8 h-8 text-sia-pink" />
@@ -762,6 +763,7 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
           </div>
         </div>
       </motion.div>
+      </div>
     </motion.div>
   );
 };
@@ -983,8 +985,8 @@ const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
           </div>
         </div>
 
-        <div className={`grid grid-cols-1 ${compact ? 'gap-4' : 'md:grid-cols-2 gap-8'}`}>
-          {insights.map((item, i) => (
+        <div className={`grid grid-cols-1 ${compact ? 'md:grid-cols-2 gap-4' : 'md:grid-cols-2 gap-8'}`}>
+          {(compact ? insights.slice(0, 2) : insights).map((item, i) => (
             <motion.div
               key={i}
               whileHover={{ x: 5 }}
