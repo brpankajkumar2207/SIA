@@ -39,7 +39,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-import { getZoneWithCache, Zone as ArinZone } from './services/arinLocationService';
+import { getZoneWithCache, Zone as ArinZone, getDistanceKm } from './services/arinLocationService';
 import { auth, firebaseInitError } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { 
@@ -73,6 +73,7 @@ type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: str
 type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
+type SOSAlert = { id: string; email: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
 
 const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
   <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
@@ -780,7 +781,7 @@ const ChatSummary = ({
         const nearby: string[] = [];
         
         snapshot.forEach(doc => {
-          if (doc.id === user.uid) return;
+          // Temporarily commented out for testing: if (doc.id === user.uid) return;
           const data = doc.data();
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
           // Only show users active in the last 15 minutes, within 100 meters
@@ -1578,6 +1579,41 @@ const LocationExplainerModal = ({
 
 
 
+const IncomingSOSAlert = ({ alert, onDismiss }: { alert: SOSAlert, onDismiss: () => void }) => {
+  // Obscure email
+  const [name, domain] = alert.email.split('@');
+  const obscured = name.length > 2 ? `${name[0]}***${name[name.length - 1]}@${domain}` : `***@${domain}`;
+
+  return (
+    <motion.div
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -100, opacity: 0 }}
+      className="fixed top-6 left-6 right-6 z-[300] max-w-lg mx-auto"
+    >
+      <div className="bg-red-600 rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(220,38,38,0.4)] border-4 border-white flex items-center gap-5">
+        <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+          <AlertTriangle className="w-8 h-8 text-white" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Emergency Alert Nearby</span>
+          </div>
+          <h4 className="text-white font-bold text-lg leading-tight mb-1">“{alert.request_type}” Needed</h4>
+          <p className="text-white/80 text-xs font-medium">Requester: {obscured}</p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="px-6 py-3 bg-white text-red-600 rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-red-50 transition-colors shadow-sm active:scale-95"
+        >
+          Acknowledge
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+
 export default function App() {
   const firebaseSetupError = firebaseInitError || firebaseDbInitError;
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
@@ -1633,6 +1669,7 @@ export default function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
+  const [incomingSOS, setIncomingSOS] = useState<SOSAlert | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -1681,11 +1718,39 @@ export default function App() {
       console.error("❌ Firebase Responses Error:", error.code, error.message);
     });
 
+    // Listen for Active SOS Alerts
+    const sosQuery = query(
+      collection(db, "active_sos_alerts"), 
+      where("active", "==", true),
+      orderBy("timestamp", "desc")
+    );
+    const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const alert = { id: change.doc.id, ...change.doc.data() } as SOSAlert;
+          
+          // Only process alerts from others created in the last 2 minutes
+          const isOthers = alert.email !== (user?.email || 'anonymous@sia.com');
+          const isRecent = Date.now() - alert.timestamp < 2 * 60 * 1000;
+
+          if (isOthers && isRecent && currentZone.center.lat !== 0) {
+            const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, alert.lat, alert.lng);
+            if (dist <= 0.1) {
+              setIncomingSOS(alert);
+            }
+          }
+        }
+      });
+    }, (error) => {
+      console.error("❌ SOS Listener Error:", error);
+    });
+
     return () => {
       unsubscribeQuestions();
       unsubscribeResponses();
+      unsubscribeSOS();
     };
-  }, []);
+  }, [user, currentZone]);
 
   // --- Auto-detect Location After Login & 10s Tracking ---
   const updateLocationInFirebase = async (zone: Zone) => {
@@ -1896,9 +1961,26 @@ export default function App() {
     setShowSOSModal(true);
   };
 
-  const handleSelectOption = (option: string) => {
+  const handleSelectOption = async (option: string) => {
     setShowSOSModal(false);
     setAppState('finding');
+
+    // Broadcast SOS Alert to nearby users
+    if (db && user && currentZone.center.lat !== 0) {
+      try {
+        await addDoc(collection(db, "active_sos_alerts"), {
+          user_id: user.uid,
+          email: user.email || 'anonymous@sia.com',
+          request_type: option,
+          lat: currentZone.center.lat,
+          lng: currentZone.center.lng,
+          timestamp: Date.now(),
+          active: true
+        });
+      } catch (e) {
+        console.error("Failed to broadcast SOS alert:", e);
+      }
+    }
   };
 
   const handleProfileClick = () => {
@@ -2315,6 +2397,15 @@ export default function App() {
             input={responseInput}
             setInput={setResponseInput}
             isVerifying={isVerifying}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {incomingSOS && (
+          <IncomingSOSAlert 
+            alert={incomingSOS} 
+            onDismiss={() => setIncomingSOS(null)} 
           />
         )}
       </AnimatePresence>
