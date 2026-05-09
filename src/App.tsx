@@ -39,7 +39,8 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Lock
+  Lock,
+  Key
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse, moderateTimeCapsuleNote } from './services/sakhiAI';
 import { getZoneWithCache, getDistanceKm, Zone as ArinZone } from './services/arinLocationService';
@@ -285,14 +286,35 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
 const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwitchToLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [uniqueCode, setUniqueCode] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const VERIFIED_CODES: Record<string, string> = {
+    'deepthi@edu.com': 'Ux1yHGIRL',
+    'shreya.hari@edu.com': 'MnHt2GIRL',
+    'revati@edu.com': 'Ty4erGIRL'
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    const expectedCode = VERIFIED_CODES[email.toLowerCase().trim()];
+    if (!expectedCode || uniqueCode.trim() !== expectedCode) {
+      setError("Invalid unique code for this email identity.");
+      return;
+    }
+
     setIsLoading(true);
-    setError('');
     if (!auth) {
       setError('Firebase auth is not configured. Please check your .env Firebase keys.');
       setIsLoading(false);
@@ -401,6 +423,46 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Confirm Password</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  placeholder="Repeat your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-6 text-sia-pink/40 hover:text-sia-pink transition-colors z-10"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Unique Identity Code</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <Key className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter your unique code"
+                  value={uniqueCode}
+                  onChange={(e) => setUniqueCode(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light uppercase tracking-widest"
+                />
               </div>
             </div>
 
@@ -545,32 +607,32 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
   };
 
   return (
-    <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
-      <div className="flex flex-col md:flex-row items-center gap-10 mb-16 bg-white/40 p-10 rounded-[3.5rem] border border-white/60 shadow-sm relative overflow-hidden">
+    <div className="pt-24 md:pt-32 px-4 md:px-6 max-w-5xl mx-auto pb-40">
+      <div className="flex flex-col md:flex-row items-center gap-8 md:gap-10 mb-16 bg-white/40 p-6 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] border border-white/60 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-10 opacity-5 scale-150 rotate-12">
           <Award className="w-64 h-64 text-sia-pink" />
         </div>
 
-        <div className="w-32 h-32 rounded-full border-4 border-white glass shadow-xl flex items-center justify-center relative group">
+        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white glass shadow-xl flex items-center justify-center relative group shrink-0">
           <div className="absolute inset-0 rounded-full bg-sia-pink/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-          <User className="w-12 h-12 text-sia-pink/40" />
-          <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-sia-pink text-white flex items-center justify-center shadow-lg border-2 border-white">
-            <CheckCircle className="w-5 h-5" />
+          <User className="w-10 h-10 md:w-12 md:h-12 text-sia-pink/40" />
+          <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-sia-pink text-white flex items-center justify-center shadow-lg border-2 border-white">
+            <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
           </div>
         </div>
 
         <div className="flex-1 text-center md:text-left space-y-6 z-10">
           <div className="space-y-4">
-            <div className="flex items-center justify-center md:justify-start gap-4">
+            <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4">
               {isEditing ? (
                 <input
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder="Your Name"
-                  className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink w-full max-w-xs"
+                  className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-xl md:text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink w-full max-w-xs text-center md:text-left"
                 />
               ) : (
-                <h2 className="font-serif italic font-bold text-4xl text-sia-text">{userName}</h2>
+                <h2 className="font-serif italic font-bold text-3xl md:text-4xl text-sia-text leading-tight">{userName}</h2>
               )}
               
               {!isEditing && (
@@ -641,7 +703,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
             </div>
           </div>
           
-          <p className="text-sia-text-muted font-light text-lg italic">"Helping others find comfort and safety."</p>
+          <p className="text-sia-text-muted font-light text-base md:text-lg italic px-4 md:px-0">"Helping others find comfort and safety."</p>
         </div>
       </div>
     </div>
