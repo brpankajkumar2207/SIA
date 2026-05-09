@@ -39,7 +39,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
+import { getZoneWithCache, Zone as ArinZone } from './services/arinLocationService';
 import { auth, firebaseInitError } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { 
@@ -1499,49 +1499,7 @@ const LocationExplainerModal = ({
   </motion.div>
 );
 
-const ManualZonePickerModal = ({
-  onSelect,
-  onClose
-}: {
-  onSelect: (z: Zone) => void,
-  onClose: () => void
-}) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-black/20 backdrop-blur-xl flex items-center justify-center p-6"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative max-h-[80vh] overflow-y-auto scrollbar-hide"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-8 right-8 p-3 rounded-full hover:bg-sia-cream text-sia-text/20">
-          <X className="w-6 h-6" />
-        </button>
 
-        <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-8 tracking-tight">Select Your City</h3>
-
-        <div className="space-y-4">
-          {PREDEFINED_ZONES.map(z => (
-            <button
-              key={z.id}
-              onClick={() => onSelect(z)}
-              className="w-full p-6 text-left bg-sia-cream/30 hover:bg-sia-pink hover:text-white rounded-[1.5rem] transition-all group flex items-center justify-between"
-            >
-              <span className="font-bold text-sm uppercase tracking-widest">{z.display_name}</span>
-              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
 
 
 export default function App() {
@@ -1583,13 +1541,15 @@ export default function App() {
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [arinResponses, setArinResponses] = useState<ArinResponse[]>([]);
-  const [currentZone, setCurrentZone] = useState<Zone>(() => {
-    const saved = sessionStorage.getItem('arin_zone');
-    return saved ? JSON.parse(saved) : PREDEFINED_ZONES[0];
-  });
+  const [currentZone, setCurrentZone] = useState<Zone>(() => ({
+    id: 'initial',
+    name: 'Detecting...',
+    type: 'city',
+    display_name: 'DETECTING...',
+    center: { lat: 0, lng: 0 },
+    radius_km: 0
+  }));
   const [showRespondModal, setShowRespondModal] = useState(false);
-  const [showLocationExplainer, setShowLocationExplainer] = useState(false);
-  const [showManualZonePicker, setShowManualZonePicker] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [responseInput, setResponseInput] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -1654,14 +1614,14 @@ export default function App() {
     if (!user || appState === 'login') return;
 
     // Initial fetch
-    getZoneWithCache(() => setShowManualZonePicker(true)).then((zone) => {
+    getZoneWithCache().then((zone) => {
       if (zone) setCurrentZone(zone);
     });
 
     // Setup 10s interval for live tracking
     const interval = setInterval(() => {
       console.log("🔄 Tracking: Fetching latest precise location...");
-      getZoneWithCache(() => {}, true).then((zone) => {
+      getZoneWithCache(true).then((zone) => {
         if (zone) setCurrentZone(zone);
       });
     }, 10000);
@@ -1680,34 +1640,14 @@ export default function App() {
   }, [activeTab]);
 
   const handleInitialLocation = async () => {
-    // Check permissions first
-    if (navigator.permissions) {
-      const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-      if (permission.state === 'prompt') {
-        setShowLocationExplainer(true);
-        return;
-      } else if (permission.state === 'denied') {
-        setShowManualZonePicker(true);
-        return;
-      }
-    }
-
     setIsLocating(true);
-    const zone = await getZoneWithCache(() => {
-      setShowManualZonePicker(true);
-    });
+    const zone = await getZoneWithCache(true);
     if (zone) setCurrentZone(zone);
     setIsLocating(false);
   };
 
   const handleAllowLocation = async () => {
-    setShowLocationExplainer(false);
-    setIsLocating(true);
-    const zone = await getZoneWithCache(() => {
-      setShowManualZonePicker(true);
-    });
-    if (zone) setCurrentZone(zone);
-    setIsLocating(false);
+    await handleInitialLocation();
   };
 
   const handleSendMessage = async (msg?: string) => {
@@ -2271,26 +2211,6 @@ export default function App() {
             input={responseInput}
             setInput={setResponseInput}
             isVerifying={isVerifying}
-          />
-        )}
-        {showLocationExplainer && (
-          <LocationExplainerModal
-            onAllow={handleAllowLocation}
-            onManual={() => {
-              setShowLocationExplainer(false);
-              setShowManualZonePicker(true);
-            }}
-          />
-        )}
-        {showManualZonePicker && (
-          <ManualZonePickerModal
-            onSelect={(z) => {
-              setCurrentZone(z);
-              setShowManualZonePicker(false);
-              sessionStorage.setItem('arin_zone', JSON.stringify(z));
-              sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
-            }}
-            onClose={() => setShowManualZonePicker(false)}
           />
         )}
       </AnimatePresence>

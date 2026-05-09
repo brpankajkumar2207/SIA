@@ -9,41 +9,6 @@ export interface Zone {
   radius_km: number;
 }
 
-export const PREDEFINED_ZONES: Zone[] = [
-  {
-    id: "city_bangalore",
-    name: "Bengaluru",
-    type: "city",
-    display_name: "BANGALORE CITY",
-    center: { lat: 12.9716, lng: 77.5946 },
-    radius_km: 25.0
-  },
-  {
-    id: "city_mumbai",
-    name: "Mumbai",
-    type: "city",
-    display_name: "MUMBAI REGION",
-    center: { lat: 19.0760, lng: 72.8777 },
-    radius_km: 30.0
-  },
-  {
-    id: "city_delhi",
-    name: "New Delhi",
-    type: "city",
-    display_name: "DELHI NCR",
-    center: { lat: 28.6139, lng: 77.2090 },
-    radius_km: 40.0
-  },
-  {
-    id: "city_hyderabad",
-    name: "Hyderabad",
-    type: "city",
-    display_name: "HYDERABAD CITY",
-    center: { lat: 17.3850, lng: 78.4867 },
-    radius_km: 20.0
-  }
-];
-
 export const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371; // Earth radius in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -57,40 +22,9 @@ export const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: nu
   return R * c;
 };
 
-export const detectZoneLocal = (latitude: number, longitude: number): Zone | null => {
-  let matchedZone: Zone | null = null;
-  let closestDistance = Infinity;
-
-  for (const zone of PREDEFINED_ZONES) {
-    const distance = getDistanceKm(
-      latitude, longitude,
-      zone.center.lat, zone.center.lng
-    );
-
-    if (distance <= zone.radius_km && distance < closestDistance) {
-      matchedZone = zone;
-      closestDistance = distance;
-    }
-  }
-
-  return matchedZone;
-};
-
-export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh = false): Promise<Zone | null> => {
-  const ZONE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  const cached = sessionStorage.getItem('arin_zone');
-  const cachedAt = sessionStorage.getItem('arin_zone_cached_at');
-
-  const isFresh = cached && cachedAt && 
-    (Date.now() - parseInt(cachedAt)) < ZONE_CACHE_DURATION;
-
-  if (isFresh && !forceRefresh) {
-    return JSON.parse(cached);
-  }
-
+export const getZoneWithCache = async (forceRefresh = false): Promise<Zone | null> => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      onManualPicker();
       resolve(null);
       return;
     }
@@ -100,22 +34,15 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
         const { latitude, longitude } = position.coords;
         console.log(`📍 Raw Coordinates: ${latitude}, ${longitude}`);
         
-        let detectedZone = detectZoneLocal(latitude, longitude);
-        let displayZone: Zone;
-
-        if (detectedZone) {
-          displayZone = { ...detectedZone };
-        } else {
-          // Create a dynamic placeholder zone if not in a predefined region
-          displayZone = {
-            id: `dynamic_${Date.now()}`,
-            name: "Detected Location",
-            type: "city",
-            display_name: "DETECTING...",
-            center: { lat: latitude, lng: longitude },
-            radius_km: 10
-          };
-        }
+        // Create a dynamic zone for the current coordinates
+        let displayZone: Zone = {
+          id: `dynamic_${Date.now()}`,
+          name: "Detected Location",
+          type: "city",
+          display_name: "DETECTING...",
+          center: { lat: latitude, lng: longitude },
+          radius_km: 10
+        };
 
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`, {
@@ -126,7 +53,7 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
           });
           
           if (response.ok) {
-            const data = await response.json();
+            const data = await response.ok ? await response.json() : null;
             console.log("📍 Reverse Geocoding Result:", data);
             
             if (data && data.address) {
@@ -142,7 +69,7 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
               if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
                 preciseName = `${localArea}, ${cityArea}`;
               } else {
-                preciseName = localArea || cityArea || (detectedZone ? detectedZone.display_name : "UNKNOWN LOCATION");
+                preciseName = localArea || cityArea || "UNKNOWN LOCATION";
               }
               
               displayZone.display_name = preciseName.trim().toUpperCase();
@@ -150,8 +77,6 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
           }
         } catch (e) {
           console.error("📍 Reverse geocoding failed:", e);
-          // Fallback to broad city name if we detected one, otherwise just keep generic
-          if (detectedZone) displayZone.display_name = detectedZone.display_name;
         }
 
         sessionStorage.setItem('arin_zone', JSON.stringify(displayZone));
@@ -160,10 +85,9 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
       },
       (error) => {
         console.error("📍 Geolocation Error:", error.message);
-        onManualPicker();
         resolve(null);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 };
