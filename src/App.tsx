@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse, moderateTimeCapsuleNote } from './services/sakhiAI';
 import { getZoneWithCache, getDistanceKm, Zone as ArinZone } from './services/arinLocationService';
-import { auth, firebaseInitError } from './firebase';
+import { auth, firebaseInitError, swRegistration } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { capsuleDb, capsuleFirebaseInitError } from './services/capsuleFirebaseConfig';
 import { 
@@ -2187,26 +2187,53 @@ export default function App() {
               
               console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
               
-              if ("serviceWorker" in navigator && Notification.permission === "granted") {
-                // Use Service Worker for better Android compatibility
-                navigator.serviceWorker.ready.then((registration) => {
-                  registration.showNotification(title, { 
-                    body, 
-                    icon: '/icon.png',
-                    vibrate: [200, 100, 200],
-                    tag: sosAlert.id,
-                    renotify: true
-                  });
-                  console.log("✅ [SOS] SW Push notification sent!");
-                });
-              } else if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title, { body, icon: '/icon.png' });
-                console.log("✅ [SOS] Legacy notification sent!");
-              } else {
-                // Fallback to window.alert if notifications not permitted
-                window.alert(`${title}\n${body}`);
-                console.log("⚠️ [SOS] Fell back to window.alert");
-              }
+              // Try multiple notification methods for Android compatibility
+              const sendNotification = async () => {
+                try {
+                  // Method 1: postMessage to our service worker (best Android support)
+                  if (swRegistration?.active) {
+                    swRegistration.active.postMessage({
+                      type: 'SOS_ALERT',
+                      title,
+                      body,
+                      tag: sosAlert.id
+                    });
+                    console.log("✅ [SOS] Sent via SW postMessage!");
+                    return;
+                  }
+
+                  // Method 2: Get any active service worker registration
+                  if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    if (reg.active) {
+                      reg.active.postMessage({
+                        type: 'SOS_ALERT',
+                        title,
+                        body,
+                        tag: sosAlert.id
+                      });
+                      console.log("✅ [SOS] Sent via navigator.serviceWorker.ready!");
+                      return;
+                    }
+                  }
+
+                  // Method 3: Direct showNotification (desktop fallback)
+                  if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(title, { body, icon: '/icon.png' });
+                    console.log("✅ [SOS] Sent via new Notification()");
+                    return;
+                  }
+
+                  // Method 4: window.alert as last resort
+                  window.alert(`${title}\n${body}`);
+                  console.log("⚠️ [SOS] Fell back to window.alert");
+                } catch (err) {
+                  console.error("❌ [SOS] All notification methods failed:", err);
+                  window.alert(`${title}\n${body}`);
+                }
+              };
+              
+              sendNotification();
             } else {
               console.log(`❌ [SOS] Too far: ${dist.toFixed(3)} km > 0.5 km`);
             }

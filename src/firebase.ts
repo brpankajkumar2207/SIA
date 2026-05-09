@@ -27,6 +27,7 @@ export const firebaseInitError =
 
 let authInstance: Auth | null = null;
 let dbInstance: Firestore | null = null;
+let swRegistration: ServiceWorkerRegistration | null = null;
 
 if (!firebaseInitError) {
   try {
@@ -43,15 +44,15 @@ if (!firebaseInitError) {
         }
     });
 
-    // Register Service Worker for Messaging with Dynamic Config
+    // Register simple notification Service Worker (Android compatible)
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      const configParams = new URLSearchParams(firebaseConfig as any).toString();
-      navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
+      navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('Messaging Service Worker registered with scope:', registration.scope);
+          console.log('✅ Notification Service Worker registered with scope:', registration.scope);
+          swRegistration = registration;
         })
         .catch((err) => {
-          console.error('Messaging Service Worker registration failed:', err);
+          console.error('❌ Service Worker registration failed:', err);
         });
     }
   } catch (error) {
@@ -61,3 +62,4 @@ if (!firebaseInitError) {
 
 export const auth = authInstance;
 export const db = dbInstance;
+export { swRegistration };
