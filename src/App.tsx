@@ -1337,15 +1337,7 @@ const WaitingScreen = ({
       )}
 
       <div className="flex flex-col gap-4 w-full max-w-xs mt-8">
-        {!matchFound && (
-          <motion.button
-            whileHover={{ scale: 1.02, backgroundColor: '#fff' }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-4 rounded-full bg-white/60 border border-sia-pink-light shadow-sm font-bold text-sia-pink h-14 uppercase tracking-widest text-xs"
-          >
-            Stay Safe
-          </motion.button>
-        )}
+
         <button
           onClick={onCancel}
           className="w-full py-2 text-[10px] text-sia-pink opacity-40 uppercase tracking-widest font-bold hover:opacity-100 transition-opacity"
