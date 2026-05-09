@@ -890,9 +890,9 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
   );
 };
 
-const PeerChat = ({ onBack }: { onBack: () => void }) => {
+const PeerChat = ({ onBack, peerName }: { onBack: () => void, peerName?: string | null }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'peer', content: 'Hi, I saw your request for pads. I am nearby in Block C. Where should I meet you?', sender: 'Anonymous sister' }
+    { role: 'peer', content: 'Hi, I saw your request. I am nearby. How can I help?', sender: peerName || 'Anonymous sister' }
   ]);
   const [input, setInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -922,7 +922,7 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
       <div className="h-20 px-6 flex items-center justify-between border-b border-sia-pink-light bg-white">
         <button onClick={onBack} className="p-2"><X className="w-6 h-6 text-sia-text-muted" /></button>
         <div className="text-center">
-          <div className="text-sm font-bold text-sia-text uppercase tracking-widest">SIA SECURE CHAT</div>
+          <div className="text-sm font-bold text-sia-text tracking-widest">{peerName || "SIA SECURE CHAT"}</div>
           <div className="text-[10px] text-green-500 font-bold uppercase">Connected Anonymously</div>
         </div>
         <div className="w-10 h-10 rounded-full bg-sia-pink-light flex items-center justify-center">
@@ -969,51 +969,15 @@ const ChatSummary = ({
   onOpenChat, 
   onHelpReceived,
   currentZone,
-  user
+  user,
+  peerName
 }: { 
   onOpenChat: () => void, 
   onHelpReceived: () => void,
   currentZone?: Zone,
-  user?: FirebaseUser | null
+  user?: FirebaseUser | null,
+  peerName?: string | null
 }) => {
-  const [nearbyUsers, setNearbyUsers] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(true);
-
-  useEffect(() => {
-    const fetchNearby = async () => {
-      if (!db || !currentZone || !user) {
-        setIsSearching(false);
-        return;
-      }
-      try {
-        const q = query(collection(db, "users_location"));
-        const snapshot = await getDocs(q);
-        const nearby: string[] = [];
-        
-        snapshot.forEach(doc => {
-          if (doc.id === user.uid) return;
-          const data = doc.data();
-          if (data.active === false) return; // Hide logged out users
-          
-          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          // Use lastSeen for accuracy, strict 1-minute timeout for real-time presence
-          const lastActive = data.lastSeen || data.timestamp || 0;
-          const isRecent = Date.now() - lastActive < 60 * 1000;
-          if (dist <= 0.1 && isRecent) {
-            nearby.push(data.email);
-          }
-        });
-        setNearbyUsers(nearby);
-      } catch(e) {
-        console.error("Failed to fetch nearby users:", e);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    fetchNearby();
-  }, [currentZone, user]);
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1036,40 +1000,20 @@ const ChatSummary = ({
 
         <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
         <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
-          Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
+          Your secure connection with <span className="font-bold">{peerName || "a verified sister"}</span> is active. You can open the chat or close the session if you've received help.
         </p>
 
-        {/* Nearby Users Display */}
         <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
           <div className="flex items-center gap-3 mb-4">
-            <MapPin className="w-5 h-5 text-sia-pink animate-pulse" />
-            <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Sisters within 100m</h4>
+            <User className="w-5 h-5 text-sia-pink" />
+            <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Connected With</h4>
           </div>
           
-          {isSearching ? (
-            <div className="flex items-center gap-3 text-sia-text-muted text-sm italic font-light">
-              <Loader2 className="w-4 h-4 animate-spin text-sia-pink" /> Scanning vicinity...
-            </div>
-          ) : nearbyUsers.length > 0 ? (
-            <ul className="space-y-3">
-              {nearbyUsers.map((email, idx) => {
-                // Obscure email for safety (e.g. s***@example.com)
-                const [name, domain] = email.split('@');
-                const obscured = name.length > 2 ? `${name[0]}***${name[name.length-1]}@${domain}` : `***@${domain}`;
-                return (
-                  <li key={idx} className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
-                    <User className="w-4 h-4 text-green-500" />
-                    <span className="text-sm font-bold text-sia-text">{obscured}</span>
-                    <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Nearby</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="text-sia-text-muted text-sm italic font-light">
-              No verified sisters detected within 100 meters right now. The broadcast remains active.
-            </div>
-          )}
+          <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
+            <Shield className="w-4 h-4 text-green-500" />
+            <span className="text-sm font-bold text-sia-text">{peerName || "Anonymous Sister"}</span>
+            <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Secure</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
@@ -1164,64 +1108,60 @@ const WaitingScreen = ({
   onMatchFound, 
   onNoHelpFound,
   currentZone,
-  user
+  user,
+  activeSosId
 }: { 
   onCancel: () => void, 
-  onMatchFound: () => void,
+  onMatchFound: (helperName: string) => void,
   onNoHelpFound: () => void,
   currentZone?: Zone,
-  user?: FirebaseUser | null
+  user?: FirebaseUser | null,
+  activeSosId?: string | null
 }) => {
   const [matchFound, setMatchFound] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    let unsubscribe: () => void;
     
-    const checkAvailability = async () => {
+    const listenForHelper = async () => {
       // Simulate brief "searching" delay for UX
       await new Promise(resolve => setTimeout(resolve, 3000));
       
       if (!isMounted) return;
 
-      if (!db || !currentZone || !user) {
+      if (!db || !activeSosId) {
         onNoHelpFound();
         return;
       }
 
       try {
-        const q = query(collection(db, "users_location"));
-        const snapshot = await getDocs(q);
-        let found = false;
-        
-        snapshot.forEach(docSnap => {
-          if (docSnap.id === user.uid) return;
-          const data = docSnap.data();
-          if (data.active === false) return;
-          
-          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          // Relaxed timeout to 5 minutes to account for client clock skew
-          const lastActive = data.lastSeen || data.timestamp || 0;
-          const isRecent = Date.now() - lastActive < 5 * 60 * 1000;
-          if (dist <= 0.5 && isRecent) { // Relaxed distance to 500m to be safe
-            found = true;
+        const docRef = doc(db, "active_sos_alerts", activeSosId);
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.status === 'accepted' && data.helper_name) {
+              setMatchFound(true);
+              // Small delay before automatically transitioning to chat
+              setTimeout(() => {
+                if (isMounted) onMatchFound(data.helper_name);
+              }, 2000);
+            }
           }
         });
-
-        if (found) {
-          setMatchFound(true);
-        } else {
-          onNoHelpFound();
-        }
       } catch(e) {
-        console.error("Failed to fetch nearby users:", e);
+        console.error("Failed to listen for helper:", e);
         onNoHelpFound();
       }
     };
 
-    checkAvailability();
+    listenForHelper();
 
-    return () => { isMounted = false; };
-  }, [currentZone, user, onNoHelpFound]);
+    return () => { 
+      isMounted = false; 
+      if (unsubscribe) unsubscribe();
+    };
+  }, [activeSosId, onNoHelpFound, onMatchFound]);
 
   return (
     <div className="min-h-screen pt-32 px-6 flex flex-col items-center bg-sia-cream">
@@ -2163,6 +2103,8 @@ export default function App() {
   const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [incomingSOS, setIncomingSOS] = useState<SOSAlert | null>(null);
+  const [activeSosId, setActiveSosId] = useState<string | null>(null);
+  const [connectedPeerName, setConnectedPeerName] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -2174,6 +2116,66 @@ export default function App() {
       });
     }
   };
+
+  // --- Service Worker Message Listener ---
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleMessage = async (event: MessageEvent) => {
+      console.log('📨 [App] Message from SW:', event.data);
+      if (event.data && event.data.type === 'SOS_ACKNOWLEDGED') {
+        const sosId = event.data.sosId;
+        console.log('✅ [SOS] Acknowledged notification for SOS ID:', sosId);
+        
+        if (!user || !db) {
+          console.error("Cannot claim SOS: User or DB not initialized.");
+          return;
+        }
+
+        try {
+          // Attempt to claim the SOS using a transaction
+          const sosRef = doc(db, "active_sos_alerts", sosId);
+          await runTransaction(db, async (transaction) => {
+            const snap = await transaction.get(sosRef);
+            if (!snap.exists()) {
+              throw "SOS Alert does not exist.";
+            }
+            
+            const data = snap.data();
+            if (data.status !== 'searching') {
+              throw "Another sister has already responded to this SOS.";
+            }
+
+            // Claim it
+            const helperName = user.displayName || user.email?.split('@')[0] || 'A verified sister';
+            transaction.update(sosRef, {
+              status: 'accepted',
+              helper_id: user.uid,
+              helper_name: helperName
+            });
+            
+            // Set local state to navigate to chat
+            setConnectedPeerName(data.name || "Anonymous Sister");
+          });
+
+          // If transaction succeeded:
+          setActiveSosId(sosId);
+          setAppState('peer-chat');
+          
+        } catch (error) {
+          console.error("❌ Failed to claim SOS:", error);
+          window.alert(error === "Another sister has already responded to this SOS." 
+            ? error 
+            : "Failed to connect to the SOS session.");
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
+  }, [user, db]);
 
   // --- Firebase Real-time Sync ---
   useEffect(() => {
@@ -2237,21 +2239,41 @@ export default function App() {
           const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
           const hasLocation = currentZone.center.lat !== 0;
           
-          console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}: isOthers=${isOthers}, isRecent=${isRecent}, isNewForUs=${isNewForUs}, alreadyAlerted=${alreadyAlerted}, hasLocation=${hasLocation}`);
+          console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}: status=${sosAlert.status}, isOthers=${isOthers}, isRecent=${isRecent}, isNewForUs=${isNewForUs}, alreadyAlerted=${alreadyAlerted}`);
           
-          if (isOthers && isRecent && isNewForUs && !alreadyAlerted && hasLocation) {
-            const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
-            console.log(`📏 [SOS] Distance: ${dist.toFixed(3)} km`);
-            
-            if (dist <= 0.5) {
-              console.log("🎯 MATCH! Triggering SOS notification for:", sosAlert.id);
+          if (isOthers && isRecent && hasLocation) {
+            // Auto-Drop Logic: If accepted by someone else, remove notification
+            if (sosAlert.status === 'accepted' && sosAlert.helper_id !== user.uid) {
+              console.log("🚫 [Auto-Drop] Someone else accepted SOS. Removing notification.");
+              if (swRegistration?.active) {
+                swRegistration.active.postMessage({
+                  type: 'CANCEL_SOS_ALERT',
+                  tag: sosAlert.id
+                });
+              } else if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                  if (reg.active) {
+                    reg.active.postMessage({ type: 'CANCEL_SOS_ALERT', tag: sosAlert.id });
+                  }
+                });
+              }
+              return; // Stop processing this change
+            }
+
+            // Normal Trigger Logic: If searching and not alerted yet
+            if (sosAlert.status === 'searching' && isNewForUs && !alreadyAlerted) {
+              const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
+              console.log(`📏 [SOS] Distance: ${dist.toFixed(3)} km`);
               
-              // Mark as alerted IMMEDIATELY to prevent re-triggering
-              alertedSOSIds.current.add(sosAlert.id);
-              
-              setIncomingSOS(sosAlert);
-              
-              const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+              if (dist <= 0.5) {
+                console.log("🎯 MATCH! Triggering SOS notification for:", sosAlert.id);
+                
+                // Mark as alerted IMMEDIATELY to prevent re-triggering
+                alertedSOSIds.current.add(sosAlert.id);
+                
+                setIncomingSOS(sosAlert);
+                
+                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
               const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
               const body = `Needs ${sosAlert.request_type}!`;
               
@@ -2568,7 +2590,7 @@ export default function App() {
     if (db && user && currentZone.center.lat !== 0) {
       try {
         console.log("🚀 Broadcasting SOS Alert for:", option, "at", currentZone.center);
-        await addDoc(collection(db, "active_sos_alerts"), {
+        const docRef = await addDoc(collection(db, "active_sos_alerts"), {
           user_id: user.uid,
           email: user.email || 'anonymous@sia.com',
           name: user.displayName || user.email?.split('@')[0] || 'Anonymous',
@@ -2576,9 +2598,13 @@ export default function App() {
           lat: currentZone.center.lat,
           lng: currentZone.center.lng,
           timestamp: Date.now(),
-          active: true
+          active: true,
+          status: 'searching', // new: true 1-to-1 handshake
+          helper_id: null,
+          helper_name: null
         });
-        console.log("✅ Broadcast Successful");
+        setActiveSosId(docRef.id);
+        console.log("✅ Broadcast Successful, SOS ID:", docRef.id);
       } catch (e) {
         console.error("❌ Failed to broadcast SOS alert:", e);
       }
@@ -2655,16 +2681,29 @@ export default function App() {
     );
   }
   if (appState === 'peer-chat') {
-    return <PeerChat onBack={() => setAppState('chat-summary')} />;
+    return <PeerChat onBack={() => setAppState('chat-summary')} peerName={connectedPeerName} />;
   }
 
   if (appState === 'chat-summary') {
     return (
       <ChatSummary
         onOpenChat={() => setAppState('peer-chat')}
-        onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }}
+        onHelpReceived={async () => {
+          if (activeSosId && db) {
+            try {
+              await updateDoc(doc(db, "active_sos_alerts", activeSosId), { active: false });
+            } catch (e) {
+              console.error("Failed to close session:", e);
+            }
+          }
+          setActiveSosId(null);
+          setConnectedPeerName(null);
+          setAppState('idle');
+          setActiveTab('home');
+        }}
         currentZone={currentZone}
         user={user}
+        peerName={connectedPeerName}
       />
     );
   }
@@ -2674,15 +2713,38 @@ export default function App() {
       <div className="min-h-screen font-sans bg-sia-cream">
         <Navbar activeView={activeView} />
         <WaitingScreen
-          onCancel={() => setAppState('idle')}
-          onMatchFound={() => setAppState('chat-summary')}
-          onNoHelpFound={() => {
-            window.alert("No available help found nearby.");
+          onCancel={async () => {
+            if (activeSosId && db) {
+              try {
+                await updateDoc(doc(db, "active_sos_alerts", activeSosId), { active: false });
+              } catch (e) {
+                console.error("Failed to cancel session:", e);
+              }
+            }
+            setActiveSosId(null);
+            setConnectedPeerName(null);
+            setAppState('idle');
+          }}
+          onMatchFound={(helperName) => {
+            setConnectedPeerName(helperName);
+            setAppState('chat-summary');
+          }}
+          onNoHelpFound={async () => {
+            if (activeSosId && db) {
+              try {
+                await updateDoc(doc(db, "active_sos_alerts", activeSosId), { active: false });
+              } catch (e) {
+                console.error("Failed to close session on timeout:", e);
+              }
+            }
+            setActiveSosId(null);
+            window.alert("No available help found nearby right now.");
             setAppState('idle');
             setActiveTab('home');
           }}
           currentZone={currentZone}
           user={user}
+          activeSosId={activeSosId}
         />
       </div>
     );
