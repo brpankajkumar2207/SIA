@@ -40,29 +40,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-<<<<<<< HEAD
-import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
-import { auth, db } from './firebase';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-
-
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  doc,
-  updateDoc,
-=======
-import { getZoneWithCache, Zone as ArinZone, getDistanceKm } from './services/arinLocationService';
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone, getDistanceKm } from './services/arinLocationService';
 import { auth, firebaseInitError } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { 
@@ -81,17 +59,11 @@ import {
   orderBy, 
   doc, 
   updateDoc, 
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   increment,
   setDoc,
   getDocs,
   deleteDoc
 } from "firebase/firestore";
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
 
 
 
@@ -479,8 +451,7 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
   );
 };
 
-<<<<<<< HEAD
-const ProfilePage = () => {
+const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
   const activities = [
     { type: 'Response', text: 'Responded to "How to deal with extreme cramps?"', time: '2h ago', status: 'Verified' },
     { type: 'Help', text: 'Provided emergency pads to a sister in Library', time: '1 day ago', status: 'Completed' },
@@ -493,14 +464,6 @@ const ProfilePage = () => {
     { label: 'Responses Posted', value: '42', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Trust Level', value: 'Guardian', icon: Shield, color: 'text-green-600', bg: 'bg-green-50' },
     { label: 'Community Karma', value: '850', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
-=======
-const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
-  const stats = [
-    { label: 'Saved Remedies', value: '12', icon: Bookmark, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Time Capsules', value: '4', icon: Heart, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
-    { label: 'Contributions', value: '28', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'Wellness Streak', value: '7 Days', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   ];
 
   return (
@@ -526,18 +489,6 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
             </div>
             <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
           </div>
-<<<<<<< HEAD
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted">
-              <MessageCircle className="w-4 h-4 text-sia-pink/40" />
-              <span className="text-sm font-light">deepthi.jain@example.com</span>
-            </div>
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted">
-              <AlertTriangle className="w-4 h-4 text-sia-pink/40" />
-              <span className="text-sm font-light">Emergency: +91 98765 43210</span>
-            </div>
-=======
           <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
             <span className="px-4 py-2 rounded-full bg-sia-pink text-white text-[10px] font-bold uppercase tracking-widest shadow-md">Guardian Level 3</span>
@@ -549,7 +500,14 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
                 {currentZone.center.lat.toFixed(4)}°N, {currentZone.center.lng.toFixed(4)}°E
               </span>
             )}
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
+              <MessageCircle className="w-4 h-4 text-sia-pink/40" />
+              <span className="text-sm font-light">deepthi.jain@example.com</span>
+            </div>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
+              <AlertCircle className="w-4 h-4 text-sia-pink/40" />
+              <span className="text-sm font-light">Emergency: +91 98765 43210</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2168,16 +2126,11 @@ export default function App() {
   const handlePostResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!responseInput.trim() || !selectedQuestion) return;
-<<<<<<< HEAD
-
-=======
     const activeDb = db;
     if (!activeDb) {
       alert('Firebase is not configured yet. Please add Firebase keys in .env.');
       return;
     }
-    
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
     setIsVerifying(true);
     // Add a temporary local message to show it's "Verifying"
     const tempResponseId = 'temp-' + Date.now();
@@ -2218,13 +2171,7 @@ export default function App() {
         timestamp: Date.now()
       };
 
-<<<<<<< HEAD
-      await addDoc(collection(db, "arin_responses"), resData);
-
-=======
       await addDoc(collection(activeDb, "arin_responses"), resData);
-      
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
       // Increment reply count
       const qRef = doc(activeDb, "arin_questions", selectedQuestion.id);
       await updateDoc(qRef, {
@@ -2561,7 +2508,6 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[60] bg-sia-cream flex flex-col pt-20 pb-20 overflow-hidden"
               >
-<<<<<<< HEAD
                 <div className="flex-1 w-full flex flex-col bg-white/40 backdrop-blur-sm relative overflow-hidden">
                    {/* Background Pattern */}
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
@@ -2586,33 +2532,6 @@ export default function App() {
                     />
                   </div>
                 </div>
-=======
-                <ArinCommunityPage
-                  questions={questions}
-                  newQuestion={newQuestion}
-                  setNewQuestion={setNewQuestion}
-                  handlePostQuestion={handlePostQuestion}
-                  onRespond={(q) => {
-                    setSelectedQuestion(q);
-                    setShowRespondModal(true);
-                  }}
-                  onHeartResponse={async (id) => {
-                    if (!db) {
-                      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
-                      return;
-                    }
-                    // Optimistic update
-                    setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
-                    
-                    const rRef = doc(db, "arin_responses", id);
-                    await updateDoc(rRef, {
-                      likes: increment(1)
-                    });
-                  }}
-                  currentZone={currentZone}
-                  responses={arinResponses}
-                />
->>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
               </motion.div>
             )}
 
