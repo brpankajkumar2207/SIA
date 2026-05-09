@@ -1985,40 +1985,6 @@ const LocationExplainerModal = ({
 
 
 
-const IncomingSOSAlert = ({ alert, onDismiss }: { alert: SOSAlert, onDismiss: () => void }) => {
-  // Obscure email or use name
-  const displayName = alert.name || alert.email.split('@')[0] || "A Sister";
-
-  return (
-    <motion.div
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -100, opacity: 0 }}
-      className="fixed top-6 left-6 right-6 z-[300] max-w-lg mx-auto"
-    >
-      <div className="bg-red-600 rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(220,38,38,0.4)] border-4 border-white flex items-center gap-5">
-        <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
-          <AlertTriangle className="w-8 h-8 text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Emergency Alert Nearby</span>
-          </div>
-          <h4 className="text-white font-bold text-lg leading-tight mb-1">“{alert.request_type}” Needed</h4>
-          <p className="text-white/80 text-xs font-medium">Requester: {displayName}</p>
-        </div>
-        <button
-          onClick={onDismiss}
-          className="px-6 py-3 bg-white text-red-600 rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-red-50 transition-colors shadow-sm active:scale-95"
-        >
-          Acknowledge
-        </button>
-      </div>
-    </motion.div>
-  );
-};
-
-
 export default function App() {
   const firebaseSetupError = firebaseInitError || firebaseDbInitError;
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
@@ -2107,7 +2073,6 @@ export default function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
-  const [incomingSOS, setIncomingSOS] = useState<SOSAlert | null>(null);
   const [activeSosId, setActiveSosId] = useState<string | null>(null);
   const [connectedPeerName, setConnectedPeerName] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -2275,8 +2240,6 @@ export default function App() {
                 
                 // Mark as alerted IMMEDIATELY to prevent re-triggering
                 alertedSOSIds.current.add(sosAlert.id);
-                
-                setIncomingSOS(sosAlert);
                 
                 const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
               const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
@@ -3154,13 +3117,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {incomingSOS && (
-          <IncomingSOSAlert 
-            alert={incomingSOS} 
-            onDismiss={() => setIncomingSOS(null)} 
-          />
-        )}
       </AnimatePresence>
     </div>
   );
