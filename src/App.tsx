@@ -869,13 +869,13 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full h-20 bg-white/40 backdrop-blur-md border-t border-sia-pink-light z-[100] px-6">
+    <div className="fixed bottom-0 left-0 w-full h-20 bg-white/85 backdrop-blur-md border-t border-sia-pink-light z-[100] px-6">
       <div className="max-w-5xl mx-auto h-full flex items-center justify-around">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-4 py-2 ${activeTab === tab.id ? 'text-sia-pink' : 'text-sia-text-muted opacity-40 hover:opacity-60'
+            className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-4 py-2 ${activeTab === tab.id ? 'text-sia-pink' : 'text-sia-text-muted opacity-70 hover:opacity-100'
               }`}
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-sia-pink/10' : ''}`} />
@@ -883,7 +883,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
             {activeTab === tab.id && (
               <motion.div
                 layoutId="nav-pill"
-                className="absolute inset-0 bg-sia-pink/5 rounded-2xl -z-10"
+                className="absolute inset-0 bg-sia-pink/10 rounded-2xl -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
