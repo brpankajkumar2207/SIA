@@ -40,6 +40,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+<<<<<<< HEAD
 import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
 import { auth, db } from './firebase';
 import {
@@ -60,11 +61,37 @@ import {
   orderBy,
   doc,
   updateDoc,
+=======
+import { getZoneWithCache, Zone as ArinZone, getDistanceKm } from './services/arinLocationService';
+import { auth, firebaseInitError } from './firebase';
+import { db, firebaseDbInitError } from './services/firebaseConfig';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  onSnapshot, 
+  orderBy, 
+  doc, 
+  updateDoc, 
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   increment,
-  setDoc
+  setDoc,
+  getDocs,
+  deleteDoc
 } from "firebase/firestore";
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
 
 
 
@@ -73,9 +100,34 @@ type AppState = 'login' | 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
-type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; timestamp: number };
+type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
+type SOSAlert = { id: string; email: string; name?: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
+
+const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
+  <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
+    <div className="w-full max-w-2xl bg-white rounded-[2.5rem] border border-sia-pink-light/40 shadow-xl p-8 md:p-12">
+      <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-6">
+        <AlertTriangle className="w-7 h-7" />
+      </div>
+      <h2 className="font-serif italic font-bold text-4xl text-sia-text mb-4">App Setup Needed</h2>
+      <p className="text-sia-text-muted mb-6">
+        SIA could not connect to Firebase, so authentication and community features cannot start yet.
+      </p>
+      <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm mb-6">
+        {message}
+      </div>
+      <div className="p-4 rounded-2xl bg-sia-cream/60 border border-sia-pink-light/30 text-sia-text text-sm leading-relaxed">
+        Add valid values for these keys in .env and restart the dev server:
+        <br />VITE_FIREBASE_API_KEY
+        <br />VITE_FIREBASE_AUTH_DOMAIN
+        <br />VITE_FIREBASE_PROJECT_ID
+        <br />VITE_FIREBASE_APP_ID
+      </div>
+    </div>
+  </div>
+);
 
 // --- Components ---
 const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitchToSignup: () => void }) => {
@@ -88,8 +140,32 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    if (!auth) {
+      setError('Firebase auth is not configured. Please check your .env Firebase keys.');
+      setIsLoading(false);
+      return;
+    }
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Generate and store Session ID
+      const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
+      localStorage.setItem('sia_session_id', sessionId);
+      
+      if (db) {
+        await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
+          sessionId: sessionId,
+          timestamp: Date.now()
+        });
+        
+        // Mark user as active in central users collection
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          active: true,
+          lastSeen: Date.now()
+        }, { merge: true });
+      }
+
       onLogin();
     } catch (err: any) {
       console.error(err);
@@ -203,8 +279,32 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    if (!auth) {
+      setError('Firebase auth is not configured. Please check your .env Firebase keys.');
+      setIsLoading(false);
+      return;
+    }
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Generate and store Session ID
+      const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
+      localStorage.setItem('sia_session_id', sessionId);
+      
+      if (db) {
+        await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
+          sessionId: sessionId,
+          timestamp: Date.now()
+        });
+
+        // Initialize user as active
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          active: true,
+          lastSeen: Date.now()
+        }, { merge: true });
+      }
+
       onSignup();
     } catch (err: any) {
       console.error(err);
@@ -379,6 +479,7 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
   );
 };
 
+<<<<<<< HEAD
 const ProfilePage = () => {
   const activities = [
     { type: 'Response', text: 'Responded to "How to deal with extreme cramps?"', time: '2h ago', status: 'Verified' },
@@ -392,6 +493,14 @@ const ProfilePage = () => {
     { label: 'Responses Posted', value: '42', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Trust Level', value: 'Guardian', icon: Shield, color: 'text-green-600', bg: 'bg-green-50' },
     { label: 'Community Karma', value: '850', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
+=======
+const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
+  const stats = [
+    { label: 'Saved Remedies', value: '12', icon: Bookmark, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Time Capsules', value: '4', icon: Heart, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
+    { label: 'Contributions', value: '28', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Wellness Streak', value: '7 Days', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   ];
 
   return (
@@ -417,6 +526,7 @@ const ProfilePage = () => {
             </div>
             <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
           </div>
+<<<<<<< HEAD
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted">
@@ -427,6 +537,19 @@ const ProfilePage = () => {
               <AlertTriangle className="w-4 h-4 text-sia-pink/40" />
               <span className="text-sm font-light">Emergency: +91 98765 43210</span>
             </div>
+=======
+          <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
+          <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
+            <span className="px-4 py-2 rounded-full bg-sia-pink text-white text-[10px] font-bold uppercase tracking-widest shadow-md">Guardian Level 3</span>
+            <span className="px-4 py-2 rounded-full bg-white/60 text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light">
+              {currentZone ? currentZone.display_name : 'Detecting Location...'}
+            </span>
+            {currentZone && (
+              <span className="px-4 py-2 rounded-full bg-sia-cream text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light/30">
+                {currentZone.center.lat.toFixed(4)}°N, {currentZone.center.lng.toFixed(4)}°E
+              </span>
+            )}
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
           </div>
         </div>
       </div>
@@ -786,21 +909,69 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, onHelpReceived: () => void }) => {
+const ChatSummary = ({ 
+  onOpenChat, 
+  onHelpReceived,
+  currentZone,
+  user
+}: { 
+  onOpenChat: () => void, 
+  onHelpReceived: () => void,
+  currentZone?: Zone,
+  user?: FirebaseUser | null
+}) => {
+  const [nearbyUsers, setNearbyUsers] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(true);
+
+  useEffect(() => {
+    const fetchNearby = async () => {
+      if (!db || !currentZone || !user) {
+        setIsSearching(false);
+        return;
+      }
+      try {
+        const q = query(collection(db, "users_location"));
+        const snapshot = await getDocs(q);
+        const nearby: string[] = [];
+        
+        snapshot.forEach(doc => {
+          if (doc.id === user.uid) return; // Hide self
+          const data = doc.data();
+          if (data.active === false) return; // Hide logged out users
+          
+          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
+          // Use lastSeen for accuracy
+          const isRecent = Date.now() - (data.lastSeen || data.timestamp) < 15 * 60 * 1000;
+          if (dist <= 0.1 && isRecent) {
+            nearby.push(data.email);
+          }
+        });
+        setNearbyUsers(nearby);
+      } catch(e) {
+        console.error("Failed to fetch nearby users:", e);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchNearby();
+  }, [currentZone, user]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md overflow-y-auto"
     >
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+      <div className="min-h-full p-6 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
 
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden my-auto"
-      >
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden shrink-0 my-8"
+        >
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
 
         <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
           <MessageCircle className="w-8 h-8 text-sia-pink" />
@@ -811,8 +982,38 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
           Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
         </p>
 
-        {/* Reusable Wisdom Summary in Compact Mode */}
-        <WisdomSummary compact />
+        {/* Nearby Users Display */}
+        <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
+          <div className="flex items-center gap-3 mb-4">
+            <MapPin className="w-5 h-5 text-sia-pink animate-pulse" />
+            <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Sisters within 100m</h4>
+          </div>
+          
+          {isSearching ? (
+            <div className="flex items-center gap-3 text-sia-text-muted text-sm italic font-light">
+              <Loader2 className="w-4 h-4 animate-spin text-sia-pink" /> Scanning vicinity...
+            </div>
+          ) : nearbyUsers.length > 0 ? (
+            <ul className="space-y-3">
+              {nearbyUsers.map((email, idx) => {
+                // Obscure email for safety (e.g. s***@example.com)
+                const [name, domain] = email.split('@');
+                const obscured = name.length > 2 ? `${name[0]}***${name[name.length-1]}@${domain}` : `***@${domain}`;
+                return (
+                  <li key={idx} className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
+                    <User className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-bold text-sia-text">{obscured}</span>
+                    <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Nearby</span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="text-sia-text-muted text-sm italic font-light">
+              No verified sisters detected within 100 meters right now. The broadcast remains active.
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
           <button
@@ -836,6 +1037,7 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
           </div>
         </div>
       </motion.div>
+      </div>
     </motion.div>
   );
 };
@@ -900,15 +1102,67 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
   );
 };
 
-const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMatchFound: () => void }) => {
+const WaitingScreen = ({ 
+  onCancel, 
+  onMatchFound, 
+  onNoHelpFound,
+  currentZone,
+  user
+}: { 
+  onCancel: () => void, 
+  onMatchFound: () => void,
+  onNoHelpFound: () => void,
+  currentZone?: Zone,
+  user?: FirebaseUser | null
+}) => {
   const [matchFound, setMatchFound] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMatchFound(true);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
+    
+    const checkAvailability = async () => {
+      // Simulate brief "searching" delay for UX
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      if (!isMounted) return;
+
+      if (!db || !currentZone || !user) {
+        onNoHelpFound();
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "users_location"));
+        const snapshot = await getDocs(q);
+        let found = false;
+        
+        snapshot.forEach(docSnap => {
+          if (docSnap.id === user.uid) return;
+          const data = docSnap.data();
+          if (data.active === false) return;
+          
+          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
+          const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
+          if (dist <= 0.1 && isRecent) {
+            found = true;
+          }
+        });
+
+        if (found) {
+          setMatchFound(true);
+        } else {
+          onNoHelpFound();
+        }
+      } catch(e) {
+        console.error("Failed to fetch nearby users:", e);
+        onNoHelpFound();
+      }
+    };
+
+    checkAvailability();
+
+    return () => { isMounted = false; };
+  }, [currentZone, user, onNoHelpFound]);
 
   return (
     <div className="min-h-screen pt-32 px-6 flex flex-col items-center bg-sia-cream">
@@ -1062,8 +1316,8 @@ const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
           </div>
         </div>
 
-        <div className={`grid grid-cols-1 ${compact ? 'gap-4' : 'md:grid-cols-2 gap-8'}`}>
-          {insights.map((item, i) => (
+        <div className={`grid grid-cols-1 ${compact ? 'md:grid-cols-2 gap-4' : 'md:grid-cols-2 gap-8'}`}>
+          {(compact ? insights.slice(0, 2) : insights).map((item, i) => (
             <motion.div
               key={i}
               whileHover={{ x: 5 }}
@@ -1316,7 +1570,7 @@ const ArinCommunityPage = ({
         />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
-            <MapPin className="w-4 h-4 text-sia-pink" /> BROADCASTING TO {currentZone.display_name}
+            <MapPin className="w-4 h-4 text-sia-pink" /> BROADCASTING TO {currentZone.city}
           </div>
           <button
             type="submit"
@@ -1342,13 +1596,13 @@ const ArinCommunityPage = ({
 
       {/* Diagnostics log removed for build stability */}
 
-      {questions.filter(q => q.zone_id === currentZone.id).length === 0 && (
+      {questions.filter(q => q.city === currentZone.city).length === 0 && (
         <div className="p-20 text-center bg-white/40 rounded-[3rem] border border-dashed border-sia-pink-light/40">
-          <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.display_name}. This space is safe and anonymous.</p>
+          <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.city}. This space is safe and anonymous.</p>
         </div>
       )}
 
-      {questions.filter(q => q.zone_id === currentZone.id).map((q) => (
+      {questions.filter(q => q.city === currentZone.city).map((q) => (
         <motion.div
           key={q.id}
           initial={{ opacity: 0, y: 20 }}
@@ -1529,57 +1783,58 @@ const LocationExplainerModal = ({
   </motion.div>
 );
 
-const ManualZonePickerModal = ({
-  onSelect,
-  onClose
-}: {
-  onSelect: (z: Zone) => void,
-  onClose: () => void
-}) => {
+
+
+
+const IncomingSOSAlert = ({ alert, onDismiss }: { alert: SOSAlert, onDismiss: () => void }) => {
+  // Obscure email or use name
+  const displayName = alert.name || alert.email.split('@')[0] || "A Sister";
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-black/20 backdrop-blur-xl flex items-center justify-center p-6"
-      onClick={onClose}
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -100, opacity: 0 }}
+      className="fixed top-6 left-6 right-6 z-[300] max-w-lg mx-auto"
     >
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative max-h-[80vh] overflow-y-auto scrollbar-hide"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-8 right-8 p-3 rounded-full hover:bg-sia-cream text-sia-text/20">
-          <X className="w-6 h-6" />
-        </button>
-
-        <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-8 tracking-tight">Select Your City</h3>
-
-        <div className="space-y-4">
-          {PREDEFINED_ZONES.map(z => (
-            <button
-              key={z.id}
-              onClick={() => onSelect(z)}
-              className="w-full p-6 text-left bg-sia-cream/30 hover:bg-sia-pink hover:text-white rounded-[1.5rem] transition-all group flex items-center justify-between"
-            >
-              <span className="font-bold text-sm uppercase tracking-widest">{z.display_name}</span>
-              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
+      <div className="bg-red-600 rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(220,38,38,0.4)] border-4 border-white flex items-center gap-5">
+        <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+          <AlertTriangle className="w-8 h-8 text-white" />
         </div>
-      </motion.div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Emergency Alert Nearby</span>
+          </div>
+          <h4 className="text-white font-bold text-lg leading-tight mb-1">“{alert.request_type}” Needed</h4>
+          <p className="text-white/80 text-xs font-medium">Requester: {displayName}</p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="px-6 py-3 bg-white text-red-600 rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-red-50 transition-colors shadow-sm active:scale-95"
+        >
+          Acknowledge
+        </button>
+      </div>
     </motion.div>
   );
 };
 
 
 export default function App() {
+  const firebaseSetupError = firebaseInitError || firebaseDbInitError;
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  
+  // Track which SOS alerts have already triggered a pop-up to avoid spamming
+  const alertedSOSIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!auth) {
+      setUser(null);
+      setAppState('login');
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
@@ -1591,6 +1846,29 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // --- Session Monitor (One Active Session Per User) ---
+  useEffect(() => {
+    if (!user || !db || !auth) return;
+
+    const sessionRef = doc(db, "user_sessions", user.uid);
+    const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const localSessionId = localStorage.getItem('sia_session_id');
+        
+        // If the database has a session ID and it doesn't match our local one
+        if (data.sessionId && localSessionId && data.sessionId !== localSessionId) {
+          console.warn("🔒 Security Alert: Account accessed from another device. Logging out.");
+          window.alert("You have been securely logged out because your account was accessed from a new device.");
+          localStorage.removeItem('sia_session_id');
+          signOut(auth).catch(e => console.error("Auto-logout error:", e));
+        }
+      }
+    });
+
+    return () => unsubscribeSession();
+  }, [user]);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [activeView, setActiveView] = useState<AppView>('main');
   const [showSOSModal, setShowSOSModal] = useState(false);
@@ -1607,18 +1885,23 @@ export default function App() {
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [arinResponses, setArinResponses] = useState<ArinResponse[]>([]);
-  const [currentZone, setCurrentZone] = useState<Zone>(() => {
-    const saved = sessionStorage.getItem('arin_zone');
-    return saved ? JSON.parse(saved) : PREDEFINED_ZONES[0];
-  });
+  const [currentZone, setCurrentZone] = useState<Zone>(() => ({
+    id: 'initial',
+    name: 'Detecting...',
+    type: 'city',
+    display_name: 'DETECTING...',
+    city: 'DETECTING...',
+    precise_name: 'DETECTING...',
+    center: { lat: 0, lng: 0 },
+    radius_km: 0
+  }));
   const [showRespondModal, setShowRespondModal] = useState(false);
-  const [showLocationExplainer, setShowLocationExplainer] = useState(false);
-  const [showManualZonePicker, setShowManualZonePicker] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [responseInput, setResponseInput] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
+  const [incomingSOS, setIncomingSOS] = useState<SOSAlert | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -1633,6 +1916,9 @@ export default function App() {
 
   // --- Firebase Real-time Sync ---
   useEffect(() => {
+    if (!db) {
+      return;
+    }
     console.log("🔥 [Firebase] Connecting to Project:", db.app.options.projectId);
 
     // Listen for questions
@@ -1664,11 +1950,119 @@ export default function App() {
       console.error("❌ Firebase Responses Error:", error.code, error.message);
     });
 
+    // Listen for Active SOS Alerts
+    const sosQuery = query(
+      collection(db, "active_sos_alerts"), 
+      where("active", "==", true)
+    );
+    const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
+      console.log(`🔔 [SOS Listener] Received update with ${snapshot.size} active alerts`);
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const alertData = change.doc.data();
+          const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
+          console.log("🚑 New SOS detected in DB:", sosAlert.request_type, "from", sosAlert.email);
+          
+          // Only process alerts from others created in the last 5 minutes
+          const isOthers = sosAlert.email !== (user?.email || 'anonymous@sia.com');
+          const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
+          
+          console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
+
+          if (isOthers && isRecent && currentZone.center.lat !== 0) {
+            // Check if the sender is actually active in the users collection
+            const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
+            console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
+            if (dist <= 0.1) {
+              console.log("🎯 MATCH! Triggering SOS Pop-up");
+              setIncomingSOS(sosAlert);
+              
+              // Only trigger the browser alert ONCE per SOS ID
+              if (!alertedSOSIds.current.has(sosAlert.id)) {
+                alertedSOSIds.current.add(sosAlert.id);
+                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+                window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
+              }
+            }
+          }
+        }
+      });
+    }, (error) => {
+      console.error("❌ SOS Listener Error:", error);
+    });
+
     return () => {
       unsubscribeQuestions();
       unsubscribeResponses();
+      unsubscribeSOS();
     };
-  }, []);
+  }, [user, currentZone]);
+
+  // --- Auto-detect Location After Login & 10s Tracking ---
+  const updateLocationInFirebase = async (zone: Zone) => {
+    if (!user || !db || zone.center.lat === 0) return;
+    try {
+      // Update location heartbeat
+      await setDoc(doc(db, "users_location", user.uid), {
+        email: user.email || 'anonymous@sia.com',
+        lat: zone.center.lat,
+        lng: zone.center.lng,
+        timestamp: Date.now(),
+        lastSeen: Date.now(),
+        active: true
+      });
+
+      // Update central user status
+      await updateDoc(doc(db, "users", user.uid), {
+        active: true,
+        lastSeen: Date.now()
+      });
+    } catch (e) {
+      console.error("Failed to update status in Firebase:", e);
+    }
+  };
+
+  // Ensure cleanup on tab close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (user && db) {
+        try {
+          // Fire-and-forget deletion on tab close
+          deleteDoc(doc(db, "users_location", user.uid));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [user, db]);
+
+  useEffect(() => {
+    if (!user || appState === 'login') return;
+
+    // Initial fetch
+    getZoneWithCache().then((zone) => {
+      if (zone) {
+        setCurrentZone(zone);
+        updateLocationInFirebase(zone);
+      }
+    });
+
+    // Setup 10s interval for live tracking
+    const interval = setInterval(() => {
+      console.log("🔄 Tracking: Fetching latest precise location...");
+      getZoneWithCache(true).then((zone) => {
+        if (zone) {
+          setCurrentZone(zone);
+          updateLocationInFirebase(zone);
+        }
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [user, appState]);
 
   useEffect(() => {
     scrollToBottom();
@@ -1681,34 +2075,17 @@ export default function App() {
   }, [activeTab]);
 
   const handleInitialLocation = async () => {
-    // Check permissions first
-    if (navigator.permissions) {
-      const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-      if (permission.state === 'prompt') {
-        setShowLocationExplainer(true);
-        return;
-      } else if (permission.state === 'denied') {
-        setShowManualZonePicker(true);
-        return;
-      }
-    }
-
     setIsLocating(true);
-    const zone = await getZoneWithCache(() => {
-      setShowManualZonePicker(true);
-    });
-    if (zone) setCurrentZone(zone);
+    const zone = await getZoneWithCache(true);
+    if (zone) {
+      setCurrentZone(zone);
+      updateLocationInFirebase(zone);
+    }
     setIsLocating(false);
   };
 
   const handleAllowLocation = async () => {
-    setShowLocationExplainer(false);
-    setIsLocating(true);
-    const zone = await getZoneWithCache(() => {
-      setShowManualZonePicker(true);
-    });
-    if (zone) setCurrentZone(zone);
-    setIsLocating(false);
+    await handleInitialLocation();
   };
 
   const handleSendMessage = async (msg?: string) => {
@@ -1762,17 +2139,23 @@ export default function App() {
   const handlePostQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuestion.trim()) return;
+    const activeDb = db;
+    if (!activeDb) {
+      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+      return;
+    }
     const qData = {
       user: 'Anonymous',
       text: newQuestion.trim(),
       time: 'Just now',
       replies: 0,
       zone_id: currentZone.id,
+      city: currentZone.city,
       timestamp: Date.now()
     };
 
     try {
-      await addDoc(collection(db, "arin_questions"), qData);
+      await addDoc(collection(activeDb, "arin_questions"), qData);
       setNewQuestion('');
     } catch (err) {
       console.error("Firebase error posting question:", err);
@@ -1782,7 +2165,16 @@ export default function App() {
   const handlePostResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!responseInput.trim() || !selectedQuestion) return;
+<<<<<<< HEAD
 
+=======
+    const activeDb = db;
+    if (!activeDb) {
+      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+      return;
+    }
+    
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
     setIsVerifying(true);
     // Add a temporary local message to show it's "Verifying"
     const tempResponseId = 'temp-' + Date.now();
@@ -1805,11 +2197,12 @@ export default function App() {
       // Remove the temp message
       setArinResponses(prev => prev.filter(r => r.id !== tempResponseId));
 
-      if (moderation.verdict === 'REJECTED') {
-        alert("Your response could not be posted: " + (moderation.reason || "Guidelines violation."));
-        setIsVerifying(false);
-        return;
-      }
+    if (moderation.verdict !== 'APPROVED') {
+       alert("Your response could not be posted: " + (moderation.reason || "Please make the reply more helpful, safe, and specific."));
+       setIsVerifying(false);
+       return;
+}
+
 
       const resData = {
         question_id: selectedQuestion.id,
@@ -1822,10 +2215,15 @@ export default function App() {
         timestamp: Date.now()
       };
 
+<<<<<<< HEAD
       await addDoc(collection(db, "arin_responses"), resData);
 
+=======
+      await addDoc(collection(activeDb, "arin_responses"), resData);
+      
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
       // Increment reply count
-      const qRef = doc(db, "arin_questions", selectedQuestion.id);
+      const qRef = doc(activeDb, "arin_questions", selectedQuestion.id);
       await updateDoc(qRef, {
         replies: increment(1)
       });
@@ -1844,9 +2242,31 @@ export default function App() {
     setShowSOSModal(true);
   };
 
-  const handleSelectOption = (option: string) => {
+  const handleSelectOption = async (option: string) => {
     setShowSOSModal(false);
     setAppState('finding');
+
+    // Broadcast SOS Alert to nearby users
+    if (db && user && currentZone.center.lat !== 0) {
+      try {
+        console.log("🚀 Broadcasting SOS Alert for:", option, "at", currentZone.center);
+        await addDoc(collection(db, "active_sos_alerts"), {
+          user_id: user.uid,
+          email: user.email || 'anonymous@sia.com',
+          name: user.displayName || user.email?.split('@')[0] || 'Anonymous',
+          request_type: option,
+          lat: currentZone.center.lat,
+          lng: currentZone.center.lng,
+          timestamp: Date.now(),
+          active: true
+        });
+        console.log("✅ Broadcast Successful");
+      } catch (e) {
+        console.error("❌ Failed to broadcast SOS alert:", e);
+      }
+    } else {
+      console.warn("⚠️ Cannot broadcast SOS: Missing db, user, or location data", { db: !!db, user: !!user, lat: currentZone.center.lat });
+    }
   };
 
   const handleProfileClick = () => {
@@ -1868,6 +2288,28 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      if (!auth) {
+        setShowLogoutModal(false);
+        return;
+      }
+      
+      // Mark location and user as inactive before logging out
+      if (user && db) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const locRef = doc(db, "users_location", user.uid);
+          
+          await Promise.all([
+            updateDoc(userRef, { active: false }),
+            deleteDoc(locRef)
+          ]);
+          
+          console.log("🗑️ User marked as inactive and location removed.");
+        } catch (e) {
+          console.error("Failed to update location status on logout", e);
+        }
+      }
+
       await signOut(auth);
       setShowLogoutModal(false);
     } catch (err) {
@@ -1881,6 +2323,10 @@ export default function App() {
         <Loader2 className="w-12 h-12 text-sia-pink animate-spin" />
       </div>
     );
+  }
+
+  if (firebaseSetupError) {
+    return <FirebaseSetupErrorPage message={firebaseSetupError} />;
   }
 
   if (appState === 'login') {
@@ -1899,6 +2345,8 @@ export default function App() {
       <ChatSummary
         onOpenChat={() => setAppState('peer-chat')}
         onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }}
+        currentZone={currentZone}
+        user={user}
       />
     );
   }
@@ -1909,7 +2357,14 @@ export default function App() {
         <Navbar activeView={activeView} />
         <WaitingScreen
           onCancel={() => setAppState('idle')}
-          onMatchFound={() => setAppState('peer-chat')}
+          onMatchFound={() => setAppState('chat-summary')}
+          onNoHelpFound={() => {
+            window.alert("No available help found nearby.");
+            setAppState('idle');
+            setActiveTab('home');
+          }}
+          currentZone={currentZone}
+          user={user}
         />
       </div>
     );
@@ -1950,7 +2405,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <ProfilePage />
+            <ProfilePage currentZone={currentZone} />
           </motion.div>
         )}
 
@@ -2103,6 +2558,7 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[60] bg-sia-cream flex flex-col pt-20 pb-20 overflow-hidden"
               >
+<<<<<<< HEAD
                 <div className="flex-1 w-full flex flex-col bg-white/40 backdrop-blur-sm relative overflow-hidden">
                    {/* Background Pattern */}
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
@@ -2127,6 +2583,33 @@ export default function App() {
                     />
                   </div>
                 </div>
+=======
+                <ArinCommunityPage
+                  questions={questions}
+                  newQuestion={newQuestion}
+                  setNewQuestion={setNewQuestion}
+                  handlePostQuestion={handlePostQuestion}
+                  onRespond={(q) => {
+                    setSelectedQuestion(q);
+                    setShowRespondModal(true);
+                  }}
+                  onHeartResponse={async (id) => {
+                    if (!db) {
+                      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+                      return;
+                    }
+                    // Optimistic update
+                    setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
+                    
+                    const rRef = doc(db, "arin_responses", id);
+                    await updateDoc(rRef, {
+                      likes: increment(1)
+                    });
+                  }}
+                  currentZone={currentZone}
+                  responses={arinResponses}
+                />
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
               </motion.div>
             )}
 
@@ -2288,24 +2771,13 @@ export default function App() {
             isVerifying={isVerifying}
           />
         )}
-        {showLocationExplainer && (
-          <LocationExplainerModal
-            onAllow={handleAllowLocation}
-            onManual={() => {
-              setShowLocationExplainer(false);
-              setShowManualZonePicker(true);
-            }}
-          />
-        )}
-        {showManualZonePicker && (
-          <ManualZonePickerModal
-            onSelect={(z) => {
-              setCurrentZone(z);
-              setShowManualZonePicker(false);
-              sessionStorage.setItem('arin_zone', JSON.stringify(z));
-              sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
-            }}
-            onClose={() => setShowManualZonePicker(false)}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {incomingSOS && (
+          <IncomingSOSAlert 
+            alert={incomingSOS} 
+            onDismiss={() => setIncomingSOS(null)} 
           />
         )}
       </AnimatePresence>

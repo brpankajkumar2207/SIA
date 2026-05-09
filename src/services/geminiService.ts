@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "" });
 
 const SYSTEM_PROMPT = `
 You are SIA Wellness AI, an emotionally intelligent and supportive assistant for women's wellness, specifically focusing on period health and emergencies.

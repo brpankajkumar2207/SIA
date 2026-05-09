@@ -5,44 +5,11 @@ export interface Zone {
   name: string;
   type: 'hostel' | 'campus' | 'office' | 'residential' | 'city';
   display_name: string;
+  city: string; // The broader city/town name for community clustering
+  precise_name: string; // The hyper-local neighborhood/area
   center: { lat: number; lng: number };
   radius_km: number;
 }
-
-export const PREDEFINED_ZONES: Zone[] = [
-  {
-    id: "city_bangalore",
-    name: "Bengaluru",
-    type: "city",
-    display_name: "BANGALORE CITY",
-    center: { lat: 12.9716, lng: 77.5946 },
-    radius_km: 25.0
-  },
-  {
-    id: "city_mumbai",
-    name: "Mumbai",
-    type: "city",
-    display_name: "MUMBAI REGION",
-    center: { lat: 19.0760, lng: 72.8777 },
-    radius_km: 30.0
-  },
-  {
-    id: "city_delhi",
-    name: "New Delhi",
-    type: "city",
-    display_name: "DELHI NCR",
-    center: { lat: 28.6139, lng: 77.2090 },
-    radius_km: 40.0
-  },
-  {
-    id: "city_hyderabad",
-    name: "Hyderabad",
-    type: "city",
-    display_name: "HYDERABAD CITY",
-    center: { lat: 17.3850, lng: 78.4867 },
-    radius_km: 20.0
-  }
-];
 
 export const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371; // Earth radius in km
@@ -57,62 +24,77 @@ export const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: nu
   return R * c;
 };
 
-export const detectZoneLocal = (latitude: number, longitude: number): Zone | null => {
-  let matchedZone: Zone | null = null;
-  let closestDistance = Infinity;
-
-  for (const zone of PREDEFINED_ZONES) {
-    const distance = getDistanceKm(
-      latitude, longitude,
-      zone.center.lat, zone.center.lng
-    );
-
-    if (distance <= zone.radius_km && distance < closestDistance) {
-      matchedZone = zone;
-      closestDistance = distance;
-    }
-  }
-
-  return matchedZone;
-};
-
-export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone | null> => {
-  const ZONE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  const cached = sessionStorage.getItem('arin_zone');
-  const cachedAt = sessionStorage.getItem('arin_zone_cached_at');
-
-  const isFresh = cached && cachedAt && 
-    (Date.now() - parseInt(cachedAt)) < ZONE_CACHE_DURATION;
-
-  if (isFresh) {
-    return JSON.parse(cached);
-  }
-
+export const getZoneWithCache = async (forceRefresh = false): Promise<Zone | null> => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      onManualPicker();
       resolve(null);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        const zone = detectZoneLocal(latitude, longitude);
-        if (zone) {
-          sessionStorage.setItem('arin_zone', JSON.stringify(zone));
-          sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
-          resolve(zone);
-        } else {
-          onManualPicker();
-          resolve(null);
+        console.log(`📍 Raw Coordinates: ${latitude}, ${longitude}`);
+        
+        // Create a dynamic zone for the current coordinates
+        let displayZone: Zone = {
+          id: `dynamic_${Date.now()}`,
+          name: "Detected Location",
+          type: "city",
+          display_name: "DETECTING...",
+          city: "UNKNOWN CITY",
+          precise_name: "UNKNOWN AREA",
+          center: { lat: latitude, lng: longitude },
+          radius_km: 10
+        };
+
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'SIA-Wellness-App'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.ok ? await response.json() : null;
+            console.log("📍 Reverse Geocoding Result:", data);
+            
+            if (data && data.address) {
+              const addr = data.address;
+              const localArea = addr.neighbourhood || addr.suburb || addr.subdivision || 
+                               addr.residential || addr.industrial || addr.village || 
+                               addr.hamlet || addr.allotments || addr.croft || '';
+                               
+              const cityArea = addr.city || addr.town || addr.municipality || 
+                              addr.city_district || addr.district || addr.county || '';
+              
+              displayZone.city = (cityArea || "GLOBAL").trim().toUpperCase();
+              displayZone.precise_name = (localArea || cityArea || "UNKNOWN AREA").trim().toUpperCase();
+
+              let preciseName = "";
+              if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
+                preciseName = `${localArea}, ${cityArea}`;
+              } else {
+                preciseName = localArea || cityArea || "UNKNOWN LOCATION";
+              }
+              
+              displayZone.display_name = preciseName.trim().toUpperCase();
+            }
+          }
+        } catch (e) {
+          console.error("📍 Reverse geocoding failed:", e);
         }
+
+        sessionStorage.setItem('arin_zone', JSON.stringify(displayZone));
+        sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
+        resolve(displayZone);
       },
-      () => {
-        onManualPicker();
+      (error) => {
+        console.error("📍 Geolocation Error:", error.message);
         resolve(null);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 };
