@@ -69,7 +69,7 @@ type AppState = 'login' | 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
-type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; timestamp: number };
+type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
 
@@ -1280,7 +1280,7 @@ const ArinCommunityPage = ({
         />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
-            <MapPin className="w-4 h-4 text-sia-pink" /> BROADCASTING TO {currentZone.display_name}
+            <MapPin className="w-4 h-4 text-sia-pink" /> BROADCASTING TO {currentZone.city}
           </div>
           <button
             type="submit"
@@ -1312,13 +1312,13 @@ const ArinCommunityPage = ({
 
       {/* Diagnostics log removed for build stability */}
 
-      {questions.filter(q => q.zone_id === currentZone.id).length === 0 && (
+      {questions.filter(q => q.city === currentZone.city).length === 0 && (
         <div className="p-20 text-center bg-white/40 rounded-[3rem] border border-dashed border-sia-pink-light/40">
-          <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.display_name}. This space is safe and anonymous.</p>
+          <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.city}. This space is safe and anonymous.</p>
         </div>
       )}
 
-      {questions.filter(q => q.zone_id === currentZone.id).map((q) => (
+      {questions.filter(q => q.city === currentZone.city).map((q) => (
         <motion.div
           key={q.id}
           initial={{ opacity: 0, y: 20 }}
@@ -1546,6 +1546,8 @@ export default function App() {
     name: 'Detecting...',
     type: 'city',
     display_name: 'DETECTING...',
+    city: 'DETECTING...',
+    precise_name: 'DETECTING...',
     center: { lat: 0, lng: 0 },
     radius_km: 0
   }));
@@ -1712,6 +1714,7 @@ export default function App() {
       time: 'Just now',
       replies: 0,
       zone_id: currentZone.id,
+      city: currentZone.city,
       timestamp: Date.now()
     };
     

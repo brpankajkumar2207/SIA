@@ -5,6 +5,8 @@ export interface Zone {
   name: string;
   type: 'hostel' | 'campus' | 'office' | 'residential' | 'city';
   display_name: string;
+  city: string; // The broader city/town name for community clustering
+  precise_name: string; // The hyper-local neighborhood/area
   center: { lat: number; lng: number };
   radius_km: number;
 }
@@ -40,6 +42,8 @@ export const getZoneWithCache = async (forceRefresh = false): Promise<Zone | nul
           name: "Detected Location",
           type: "city",
           display_name: "DETECTING...",
+          city: "UNKNOWN CITY",
+          precise_name: "UNKNOWN AREA",
           center: { lat: latitude, lng: longitude },
           radius_km: 10
         };
@@ -65,6 +69,9 @@ export const getZoneWithCache = async (forceRefresh = false): Promise<Zone | nul
               const cityArea = addr.city || addr.town || addr.municipality || 
                               addr.city_district || addr.district || addr.county || '';
               
+              displayZone.city = (cityArea || "GLOBAL").trim().toUpperCase();
+              displayZone.precise_name = (localArea || cityArea || "UNKNOWN AREA").trim().toUpperCase();
+
               let preciseName = "";
               if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
                 preciseName = `${localArea}, ${cityArea}`;
