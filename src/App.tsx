@@ -634,7 +634,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
               ) : (
                 <h2 className="font-serif italic font-bold text-3xl md:text-4xl text-sia-text leading-tight">{userName}</h2>
               )}
-              
+
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
@@ -702,7 +702,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
               </div>
             </div>
           </div>
-          
+
           <p className="text-sia-text-muted font-light text-base md:text-lg italic px-4 md:px-0">"Helping others find comfort and safety."</p>
         </div>
       </div>
@@ -1271,7 +1271,7 @@ const WaitingScreen = ({
 
         <div className={`w-48 h-48 rounded-full bg-gradient-to-br transition-all duration-700 ${matchFound ? 'from-green-400 to-green-600 scale-110 shadow-[0_20px_60px_rgba(34,197,94,0.3)]' : 'from-sia-peach to-sia-pink shadow-[0_20px_50px_rgba(216,27,96,0.3)] pulsate'} flex flex-col items-center justify-center text-white border-4 border-white/20 z-10 relative`}>
           {matchFound ? (
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center justify-center">
               <Shield className="w-12 h-12 text-white mb-2" />
               <span className="font-bold tracking-widest text-xl">FOUND</span>
             </motion.div>
@@ -1307,10 +1307,10 @@ const WaitingScreen = ({
       </div>
 
       <h2 className="font-serif italic text-4xl text-center mb-3 text-sia-text">
-        {matchFound ? 'Sister found!' : 'Finding support...'}
+        {matchFound ? 'Sakhi found!' : 'Finding support...'}
       </h2>
       <p className="text-sia-text-muted text-center mb-8 max-w-sm font-light">
-        {matchFound ? 'A nearby sister has confirmed she can help.' : 'Connecting you with verified sisters nearby. Your identity remains private throughout.'}
+        {matchFound ? 'A nearby sakhi has confirmed she can help.' : 'Connecting you with verified sakhis nearby. Your identity remains private throughout.'}
       </p>
 
       {!matchFound && (
@@ -2334,8 +2334,8 @@ export default function App() {
                 // Mark as alerted IMMEDIATELY to prevent re-triggering
                 alertedSOSIds.current.add(sosAlert.id);
 
-                const title = `🚨 EMERGENCY ALERT: A sister nearby`;
-                const body = `Needs ${sosAlert.request_type}!`;
+                const title = `🚨 SIA ALERT 💗: `;
+                const body = `Someone nearby requested ${sosAlert.request_type} support!`;
 
                 console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
 
