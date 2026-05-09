@@ -75,7 +75,7 @@ type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: str
 type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
-type SOSAlert = { id: string; email: string; name?: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
+type SOSAlert = { id: string; user_id: string; email: string; name?: string; request_type: string; lat: number; lng: number; timestamp: number; active: boolean };
 
 const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
   <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
@@ -1917,33 +1917,33 @@ export default function App() {
       where("active", "==", true)
     );
     const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
+      // Only process if user is logged in and session is active
+      if (!user || appState === 'login') return;
+
       console.log(`🔔 [SOS Listener] Received update with ${snapshot.size} active alerts`);
       snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
+        if (change.type === "added" || change.type === "modified") {
           const alertData = change.doc.data();
           const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
-          console.log("🚑 New SOS detected in DB:", sosAlert.request_type, "from", sosAlert.email);
           
-          // Only process alerts from others created in the last 5 minutes
-          const isOthers = sosAlert.email !== (user?.email || 'anonymous@sia.com');
+          // Filter: Others only, recent only, not already alerted
+          const isOthers = sosAlert.user_id !== user.uid;
           const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
+          const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
           
-          console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
-
-          if (isOthers && isRecent && currentZone.center.lat !== 0) {
-            // Check if the sender is actually active in the users collection
+          if (isOthers && isRecent && !alreadyAlerted && currentZone.center.lat !== 0) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
-            console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
+            
             if (dist <= 0.1) {
-              console.log("🎯 MATCH! Triggering SOS Pop-up");
+              console.log("🎯 MATCH! Triggering SOS Pop-up for:", sosAlert.id);
+              
+              // Mark as alerted IMMEDIATELY to prevent re-triggering
+              alertedSOSIds.current.add(sosAlert.id);
+              
               setIncomingSOS(sosAlert);
               
-              // Only trigger the browser alert ONCE per SOS ID
-              if (!alertedSOSIds.current.has(sosAlert.id)) {
-                alertedSOSIds.current.add(sosAlert.id);
-                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
-                window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
-              }
+              const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+              window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
             }
           }
         }
@@ -1957,7 +1957,7 @@ export default function App() {
       unsubscribeResponses();
       unsubscribeSOS();
     };
-  }, [user, currentZone]);
+  }, [user, currentZone, appState]);
 
   // --- Auto-detect Location After Login & 10s Tracking ---
   const updateLocationInFirebase = async (zone: Zone) => {
