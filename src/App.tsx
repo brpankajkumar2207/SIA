@@ -2169,7 +2169,20 @@ export default function App() {
               setIncomingSOS(sosAlert);
               
               const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
-              window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
+              const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
+              const body = `Needs ${sosAlert.request_type}!`;
+              
+              if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                  new Notification(title, { body });
+                } else if (Notification.permission !== "denied") {
+                  Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                      new Notification(title, { body });
+                    }
+                  });
+                }
+              }
             }
           }
         }
