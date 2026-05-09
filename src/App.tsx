@@ -879,7 +879,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
               }`}
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-sia-pink/10' : ''}`} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>
+            <span className={`text-[10px] font-bold tracking-widest ${tab.label === 'NearHer' ? '' : 'uppercase'}`}>{tab.label}</span>
             {activeTab === tab.id && (
               <motion.div
                 layoutId="nav-pill"
