@@ -504,8 +504,8 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
   const [isEditing, setIsEditing] = useState(false);
   const [userName, setUserName] = useState('Anonymous Sister');
   const [userEmail, setUserEmail] = useState('');
-  const [userPhone, setUserPhone] = useState('+91 98765 43210');
-  const [institution, setInstitution] = useState('Indian Institute of Science (IISc)');
+  const [userPhone, setUserPhone] = useState('');
+  const [institution, setInstitution] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -609,7 +609,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                     value={institution}
                     onChange={(e) => setInstitution(e.target.value)}
                     placeholder="Institution"
-                    className="bg-white/60 border border-sia-pink-light/30 rounded-lg px-3 py-1 text-sm text-sia-text-muted focus:outline-none focus:ring-1 focus:ring-sia-pink w-full max-w-xs"
+                    className="bg-white border-2 border-sia-pink-light rounded-xl px-4 py-2 text-sm text-sia-text focus:outline-none focus:border-sia-pink focus:ring-4 focus:ring-sia-pink/10 w-full max-w-xs shadow-sm transition-all"
                   />
                 ) : (
                   <span className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">{institution}</span>
@@ -628,7 +628,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                     value={userPhone}
                     onChange={(e) => setUserPhone(e.target.value)}
                     placeholder="Phone Number"
-                    className="bg-white/60 border border-sia-pink-light/30 rounded-lg px-3 py-1 text-sm text-sia-text-muted focus:outline-none focus:ring-1 focus:ring-sia-pink w-full max-w-xs"
+                    className="bg-white border-2 border-sia-pink-light rounded-xl px-4 py-2 text-sm text-sia-text focus:outline-none focus:border-sia-pink focus:ring-4 focus:ring-sia-pink/10 w-full max-w-xs shadow-sm transition-all"
                   />
                 ) : (
                   <span className="text-sia-text-muted font-light text-sm">{userPhone}</span>
@@ -965,6 +965,31 @@ const ChatSummary = ({
   peerName?: string | null,
   isRequester?: boolean
 }) => {
+  const [latestNote, setLatestNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!currentZone?.center?.lat || !db) return;
+
+    const activeDb = capsuleDb || db;
+    const q = query(collection(activeDb, "time_capsules"), orderBy("timestamp", "desc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notes = snapshot.docs.map(doc => doc.data() as TimeCapsuleNote);
+      const nearby = notes.filter(note => {
+        const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, note.lat, note.lng);
+        return dist <= 0.3 && note.status === 'APPROVED';
+      });
+
+      if (nearby.length > 0) {
+        setLatestNote(nearby[0].text);
+      } else {
+        setLatestNote("Anonymous wisdom, comfort, and survival notes left by women within 300 meters.");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentZone, db]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -987,19 +1012,28 @@ const ChatSummary = ({
 
           <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
           <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
-            Your secure connection with <span className="font-bold">{peerName || "a verified sister"}</span> is active. You can open the chat or close the session if you've received help.
+            Your secure connection is active. You can open the chat or close the session if you've received help.
           </p>
 
           <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
             <div className="flex items-center gap-3 mb-4">
-              <User className="w-5 h-5 text-sia-pink" />
-              <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Connected With</h4>
+              <Sparkles className="w-5 h-5 text-sia-pink" />
+              <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">NearHer Wisdom</h4>
             </div>
 
-            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
-              <Shield className="w-4 h-4 text-green-500" />
-              <span className="text-sm font-bold text-sia-text">{peerName || "Anonymous Sister"}</span>
-              <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Secure</span>
+            <div className="flex flex-col gap-3 bg-white p-6 rounded-2xl border border-sia-pink-light/20 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.05]">
+                <Heart className="w-12 h-12 text-sia-pink" />
+              </div>
+              <p className="text-sm font-serif italic text-sia-text leading-relaxed relative z-10">
+                "{latestNote || "Loading nearby wisdom..."}"
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[9px] uppercase tracking-widest text-sia-pink font-bold bg-sia-pink/5 px-2 py-1 rounded-full">Nearby Note</span>
+                <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
+                  <Shield className="w-2.5 h-2.5" /> Secure Session
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1020,6 +1054,15 @@ const ChatSummary = ({
               </button>
             )}
           </div>
+
+          {isRequester && (
+            <button
+              onClick={onHelpReceived}
+              className="mt-6 text-[9px] font-bold uppercase tracking-[0.3em] text-sia-text-muted hover:text-red-500 transition-colors flex items-center gap-2 opacity-60 hover:opacity-100"
+            >
+              <X className="w-3 h-3" /> Cancel Request
+            </button>
+          )}
 
           <div className="mt-8 pt-6 border-t border-dashed border-sia-pink-light/50 w-full">
             <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-30">
@@ -2099,8 +2142,8 @@ export default function App() {
               throw "Another sister has already responded to this SOS.";
             }
 
-            // Claim it
-            const helperName = user.displayName || user.email?.split('@')[0] || 'A verified sister';
+            // Claim it (Anonymous)
+            const helperName = 'A verified sister';
             transaction.update(sosRef, {
               status: 'accepted',
               helper_id: user.uid,
@@ -2108,7 +2151,7 @@ export default function App() {
             });
 
             // Set local state to navigate to chat
-            setConnectedPeerName(data.name || "Anonymous Sister");
+            setConnectedPeerName("Sister");
           });
 
           // If transaction succeeded:
@@ -2225,8 +2268,7 @@ export default function App() {
                 // Mark as alerted IMMEDIATELY to prevent re-triggering
                 alertedSOSIds.current.add(sosAlert.id);
 
-                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
-                const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
+                const title = `🚨 EMERGENCY ALERT: A sister nearby`;
                 const body = `Needs ${sosAlert.request_type}!`;
 
                 console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
@@ -2547,7 +2589,7 @@ export default function App() {
         const docRef = await addDoc(collection(db, "active_sos_alerts"), {
           user_id: user.uid,
           email: user.email || 'anonymous@sia.com',
-          name: user.displayName || user.email?.split('@')[0] || 'Anonymous',
+          name: 'Sister',
           request_type: option,
           lat: currentZone.center.lat,
           lng: currentZone.center.lng,
@@ -2555,7 +2597,7 @@ export default function App() {
           active: true,
           status: 'searching', // new: true 1-to-1 handshake
           helper_id: null,
-          helper_name: null
+          helper_name: 'A verified sister'
         });
         setActiveSosId(docRef.id);
         console.log("✅ Broadcast Successful, SOS ID:", docRef.id);

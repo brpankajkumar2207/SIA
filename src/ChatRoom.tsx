@@ -133,7 +133,7 @@ function ChatRoom({
         
         <div className="text-center">
           <div className="text-sm font-black text-sia-text tracking-[0.2em] uppercase mb-0.5">
-            {peerName || "Secure Chat"}
+            Secure Session
           </div>
           <div className="flex items-center justify-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -178,7 +178,7 @@ function ChatRoom({
                 <div className={`max-w-[85%] group`}>
                   {msg.senderId !== currentUser && (
                     <div className="text-[10px] font-black uppercase tracking-widest text-sia-pink mb-1 ml-4 opacity-40">
-                      {peerName || "Sister"}
+                      Sister
                     </div>
                   )}
                   <div className={`
