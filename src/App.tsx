@@ -2187,9 +2187,21 @@ export default function App() {
               
               console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
               
-              if ("Notification" in window && Notification.permission === "granted") {
+              if ("serviceWorker" in navigator && Notification.permission === "granted") {
+                // Use Service Worker for better Android compatibility
+                navigator.serviceWorker.ready.then((registration) => {
+                  registration.showNotification(title, { 
+                    body, 
+                    icon: '/icon.png',
+                    vibrate: [200, 100, 200],
+                    tag: sosAlert.id,
+                    renotify: true
+                  });
+                  console.log("✅ [SOS] SW Push notification sent!");
+                });
+              } else if ("Notification" in window && Notification.permission === "granted") {
                 new Notification(title, { body, icon: '/icon.png' });
-                console.log("✅ [SOS] Push notification sent!");
+                console.log("✅ [SOS] Legacy notification sent!");
               } else {
                 // Fallback to window.alert if notifications not permitted
                 window.alert(`${title}\n${body}`);
