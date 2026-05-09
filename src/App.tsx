@@ -461,7 +461,7 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
                   placeholder="Enter your unique code"
                   value={uniqueCode}
                   onChange={(e) => setUniqueCode(e.target.value)}
-                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light uppercase tracking-widest"
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light tracking-widest"
                 />
               </div>
             </div>
