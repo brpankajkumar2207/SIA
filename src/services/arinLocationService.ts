@@ -105,26 +105,44 @@ export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone
           
           try {
             // Reverse geocode to get a more precise local area name
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
+            // Nominatim requires a User-Agent header or it may block the request
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`, {
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'SIA-Wellness-App'
+              }
+            });
+            
             if (response.ok) {
               const data = await response.json();
+              console.log("📍 Precise Location Data:", data);
+              
               if (data && data.address) {
                 const addr = data.address;
-                const localArea = addr.neighbourhood || addr.suburb || addr.city_district || addr.village || '';
-                const cityArea = addr.city || addr.town || addr.county || '';
+                // Highly granular list of potential local area identifiers
+                const localArea = addr.neighbourhood || addr.suburb || addr.subdivision || 
+                                 addr.residential || addr.industrial || addr.village || 
+                                 addr.hamlet || addr.allotments || addr.croft || '';
+                                 
+                const cityArea = addr.city || addr.town || addr.municipality || 
+                                addr.city_district || addr.district || addr.county || '';
                 
-                let preciseName = zone.display_name;
-                if (localArea && cityArea && localArea !== cityArea) {
+                let preciseName = "";
+                
+                if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
                   preciseName = `${localArea}, ${cityArea}`;
-                } else if (localArea || cityArea) {
-                  preciseName = localArea || cityArea;
+                } else {
+                  preciseName = localArea || cityArea || zone.display_name;
                 }
                 
-                preciseZone.display_name = preciseName;
+                // Final formatting: capitalize and trim
+                preciseZone.display_name = preciseName.trim().toUpperCase();
               }
+            } else {
+              console.warn("📍 Geocoding API returned status:", response.status);
             }
           } catch (e) {
-            console.error("Reverse geocoding failed", e);
+            console.error("📍 Reverse geocoding failed:", e);
           }
 
           sessionStorage.setItem('arin_zone', JSON.stringify(preciseZone));
