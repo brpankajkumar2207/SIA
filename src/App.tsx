@@ -43,7 +43,7 @@ import { askSakhiKnows } from './services/sakhiAI';
 
 
 // --- Types ---
-type AppState = 'idle' | 'finding' | 'peer-chat';
+type AppState = 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
@@ -456,6 +456,58 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
     </motion.div>
   );
 };
+
+const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, onHelpReceived: () => void }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[100] bg-sia-cream flex flex-col items-center justify-center p-6"
+    >
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+      
+      <motion.div 
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+        
+        <div className="w-24 h-24 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-8">
+          <MessageCircle className="w-10 h-10 text-sia-pink" />
+        </div>
+        
+        <h3 className="font-serif italic font-bold text-3xl mb-4 text-sia-text">Session Active</h3>
+        <p className="text-sia-text-muted text-sm font-light mb-10 leading-relaxed">
+          Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
+        </p>
+
+        <div className="space-y-4 w-full">
+          <button
+            onClick={onOpenChat}
+            className="w-full h-16 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.2em] text-[10px] shadow-lg hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3"
+          >
+            <MessageSquare className="w-4 h-4" /> Open Chat
+          </button>
+          
+          <button
+            onClick={onHelpReceived}
+            className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
+          >
+            <CheckCircle className="w-4 h-4" /> Help Received
+          </button>
+        </div>
+
+        <div className="mt-10 pt-8 border-t border-dashed border-sia-pink-light/50 w-full">
+          <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-30">
+            <Shield className="w-3 h-3" /> Secure & Anonymous
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 
 const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: string) => void }) => {
   const options = [
@@ -1085,7 +1137,16 @@ export default function App() {
     setActiveTab('home');
   };
   if (appState === 'peer-chat') {
-    return <PeerChat onBack={() => { setAppState('idle'); setActiveTab('home'); }} />;
+    return <PeerChat onBack={() => setAppState('chat-summary')} />;
+  }
+
+  if (appState === 'chat-summary') {
+    return (
+      <ChatSummary 
+        onOpenChat={() => setAppState('peer-chat')} 
+        onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }} 
+      />
+    );
   }
 
   if (appState === 'finding') {
