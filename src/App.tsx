@@ -1721,22 +1721,30 @@ export default function App() {
     // Listen for Active SOS Alerts
     const sosQuery = query(
       collection(db, "active_sos_alerts"), 
-      where("active", "==", true),
-      orderBy("timestamp", "desc")
+      where("active", "==", true)
     );
     const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
+      console.log(`🔔 [SOS Listener] Received update with ${snapshot.size} active alerts`);
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
-          const alert = { id: change.doc.id, ...change.doc.data() } as SOSAlert;
+          const alertData = change.doc.data();
+          const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
+          console.log("🚑 New SOS detected in DB:", sosAlert.request_type, "from", sosAlert.email);
           
-          // Only process alerts from others created in the last 2 minutes
-          const isOthers = alert.email !== (user?.email || 'anonymous@sia.com');
-          const isRecent = Date.now() - alert.timestamp < 2 * 60 * 1000;
+          // Only process alerts from others created in the last 5 minutes
+          const isOthers = sosAlert.email !== (user?.email || 'anonymous@sia.com');
+          const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
+          
+          console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
 
           if (isOthers && isRecent && currentZone.center.lat !== 0) {
-            const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, alert.lat, alert.lng);
+            const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
+            console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
             if (dist <= 0.1) {
-              setIncomingSOS(alert);
+              console.log("🎯 MATCH! Triggering SOS Pop-up");
+              // Browser-level alert for maximum visibility
+              window.alert(`🚨 EMERGENCY ALERT: A user nearby needs ${sosAlert.request_type}!`);
+              setIncomingSOS(sosAlert);
             }
           }
         }
@@ -1968,6 +1976,7 @@ export default function App() {
     // Broadcast SOS Alert to nearby users
     if (db && user && currentZone.center.lat !== 0) {
       try {
+        console.log("🚀 Broadcasting SOS Alert for:", option, "at", currentZone.center);
         await addDoc(collection(db, "active_sos_alerts"), {
           user_id: user.uid,
           email: user.email || 'anonymous@sia.com',
@@ -1977,9 +1986,12 @@ export default function App() {
           timestamp: Date.now(),
           active: true
         });
+        console.log("✅ Broadcast Successful");
       } catch (e) {
-        console.error("Failed to broadcast SOS alert:", e);
+        console.error("❌ Failed to broadcast SOS alert:", e);
       }
+    } else {
+      console.warn("⚠️ Cannot broadcast SOS: Missing db, user, or location data", { db: !!db, user: !!user, lat: currentZone.center.lat });
     }
   };
 
