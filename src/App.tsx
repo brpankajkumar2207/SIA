@@ -128,6 +128,13 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
           sessionId: sessionId,
           timestamp: Date.now()
         });
+        
+        // Mark user as active in central users collection
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          active: true,
+          lastSeen: Date.now()
+        }, { merge: true });
       }
 
       onLogin();
@@ -256,6 +263,13 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
           sessionId: sessionId,
           timestamp: Date.now()
         });
+
+        // Initialize user as active
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          active: true,
+          lastSeen: Date.now()
+        }, { merge: true });
       }
 
       onSignup();
@@ -811,8 +825,8 @@ const ChatSummary = ({
           if (data.active === false) return; // Hide logged out users
           
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          // Only show users active in the last 15 minutes, within 100 meters
-          const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
+          // Use lastSeen for accuracy
+          const isRecent = Date.now() - (data.lastSeen || data.timestamp) < 15 * 60 * 1000;
           if (dist <= 0.1 && isRecent) {
             nearby.push(data.email);
           }
@@ -1842,11 +1856,11 @@ export default function App() {
           console.log(`🔍 Filtering - IsOthers: ${isOthers}, IsRecent: ${isRecent}, CurrentLat: ${currentZone.center.lat}`);
 
           if (isOthers && isRecent && currentZone.center.lat !== 0) {
+            // Check if the sender is actually active in the users collection
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
             console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
             if (dist <= 0.1) {
               console.log("🎯 MATCH! Triggering SOS Pop-up");
-              
               setIncomingSOS(sosAlert);
               
               // Only trigger the browser alert ONCE per SOS ID
@@ -1874,15 +1888,23 @@ export default function App() {
   const updateLocationInFirebase = async (zone: Zone) => {
     if (!user || !db || zone.center.lat === 0) return;
     try {
+      // Update location heartbeat
       await setDoc(doc(db, "users_location", user.uid), {
         email: user.email || 'anonymous@sia.com',
         lat: zone.center.lat,
         lng: zone.center.lng,
         timestamp: Date.now(),
+        lastSeen: Date.now(),
         active: true
       });
+
+      // Update central user status
+      await updateDoc(doc(db, "users", user.uid), {
+        active: true,
+        lastSeen: Date.now()
+      });
     } catch (e) {
-      console.error("Failed to update location in Firebase:", e);
+      console.error("Failed to update status in Firebase:", e);
     }
   };
 
@@ -2148,13 +2170,20 @@ export default function App() {
         return;
       }
       
-      // Delete location from active users before logging out
+      // Mark location and user as inactive before logging out
       if (user && db) {
         try {
-          await deleteDoc(doc(db, "users_location", user.uid));
-          console.log("🗑️ User location completely removed on logout.");
+          const userRef = doc(db, "users", user.uid);
+          const locRef = doc(db, "users_location", user.uid);
+          
+          await Promise.all([
+            updateDoc(userRef, { active: false }),
+            deleteDoc(locRef)
+          ]);
+          
+          console.log("🗑️ User marked as inactive and location removed.");
         } catch (e) {
-          console.error("Failed to remove location on logout", e);
+          console.error("Failed to update location status on logout", e);
         }
       }
 
