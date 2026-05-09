@@ -399,6 +399,16 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
     { role: 'peer', content: 'Hi, I saw your request for pads. I am nearby in Block C. Where should I meet you?', sender: 'Anonymous sister' }
   ]);
   const [input, setInput] = useState('');
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [messages]);
 
   const sendMsg = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -424,7 +434,10 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-y-auto space-y-4">
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 p-6 overflow-y-auto space-y-4"
+      >
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${
@@ -1047,7 +1060,7 @@ export default function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages]);
+  }, [chatMessages, isTyping]);
 
   const handleSendMessage = async (msg?: string) => {
     const textToSend = msg || userInput;
