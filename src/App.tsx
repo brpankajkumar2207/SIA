@@ -44,7 +44,7 @@ import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services
 
 
 // --- Types ---
-type AppState = 'idle' | 'finding' | 'peer-chat';
+type AppState = 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
@@ -402,6 +402,16 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
     { role: 'peer', content: 'Hi, I saw your request for pads. I am nearby in Block C. Where should I meet you?', sender: 'Anonymous sister' }
   ]);
   const [input, setInput] = useState('');
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [messages]);
 
   const sendMsg = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -427,7 +437,10 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-y-auto space-y-4">
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 p-6 overflow-y-auto space-y-4"
+      >
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${
@@ -459,6 +472,61 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
     </motion.div>
   );
 };
+
+const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, onHelpReceived: () => void }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto"
+    >
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+      
+      <motion.div 
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden my-auto"
+      >
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+        
+        <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
+          <MessageCircle className="w-8 h-8 text-sia-pink" />
+        </div>
+        
+        <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
+        <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
+          Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
+        </p>
+
+        {/* Reusable Wisdom Summary in Compact Mode */}
+        <WisdomSummary compact />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
+          <button
+            onClick={onOpenChat}
+            className="w-full h-16 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.2em] text-[10px] shadow-lg hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3"
+          >
+            <MessageSquare className="w-4 h-4" /> Open Chat
+          </button>
+          
+          <button
+            onClick={onHelpReceived}
+            className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
+          >
+            <CheckCircle className="w-4 h-4" /> Help Received
+          </button>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-dashed border-sia-pink-light/50 w-full">
+          <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-30">
+            <Shield className="w-3 h-3" /> Secure & Anonymous
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 
 const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: string) => void }) => {
   const options = [
@@ -646,7 +714,57 @@ const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: b
 );
 
 
+const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
+  const insights = [
+    { icon: Sparkles, text: "Most women nearby mention that the library washroom usually has emergency pads.", color: "text-sia-pink" },
+    { icon: AlertTriangle, text: "Several women reported that the mess-side washroom bins are currently broken.", color: "text-amber-500" },
+    { icon: Droplets, text: "Many women nearby recommend warm jeera water and rest during cramps.", color: "text-blue-500" },
+    { icon: Shield, text: "Hostel Block A is considered one of the safest support zones nearby.", color: "text-green-600" }
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8 }}
+      className={`${compact ? 'mb-8 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem]' : 'mb-12 md:mb-20 p-6 md:p-14 rounded-[2.5rem] md:rounded-[3.5rem]'} bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_30px_100px_rgba(216,27,96,0.08)] relative overflow-hidden group w-full`}
+    >
+      <div className="absolute top-0 right-0 p-12 opacity-[0.03] scale-150 group-hover:rotate-12 transition-transform duration-1000">
+        <Brain className={`${compact ? 'w-32 h-32' : 'w-64 h-64'} text-sia-pink`} />
+      </div>
+      
+      <div className="relative z-10">
+        <div className={`flex items-center gap-4 ${compact ? 'mb-6 text-left' : 'mb-10'}`}>
+          <div className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} rounded-[1.2rem] bg-gradient-to-tr from-sia-pink to-sia-peach flex items-center justify-center shadow-[0_10px_30px_rgba(216,27,96,0.3)]`}>
+            <Sparkles className={`${compact ? 'w-5 h-5' : 'w-7 h-7'} text-white animate-pulse`} />
+          </div>
+          <div className="text-left">
+            <h3 className={`font-serif italic font-bold text-sia-text ${compact ? 'text-lg md:text-xl' : 'text-2xl md:text-3xl'}`}>Nearby Wisdom Summary ✨</h3>
+            <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-40">AI-Powered Anonymous Insight</p>
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-1 ${compact ? 'gap-4' : 'md:grid-cols-2 gap-8'}`}>
+          {insights.map((item, i) => (
+            <motion.div 
+              key={i}
+              whileHover={{ x: 5 }}
+              className={`flex items-start gap-4 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] bg-white/40 border border-white/60 shadow-sm text-left`}
+            >
+              <item.icon className={`w-5 h-5 ${item.color} shrink-0 mt-1 opacity-60`} />
+              <p className={`${compact ? 'text-xs' : 'text-base'} leading-relaxed text-sia-text font-light`}>“{item.text}”</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+
 const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: any) => (
+
   <motion.div
     whileHover={{ y: -8, scale: 1.02 }}
     className="p-6 md:p-8 rounded-[2.5rem] md:rounded-[2.8rem] bg-white/60 backdrop-blur-xl border border-sia-pink-light shadow-sm hover:shadow-[0_20px_50px_rgba(216,27,96,0.1)] transition-all relative group"
@@ -739,47 +857,7 @@ const TimeCapsulePage = () => {
         </div>
 
         {/* AI Summary Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mb-12 md:mb-20 p-6 md:p-14 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_30px_100px_rgba(216,27,96,0.08)] relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 p-12 opacity-[0.03] scale-150 group-hover:rotate-12 transition-transform duration-1000">
-            <Brain className="w-64 h-64 text-sia-pink" />
-          </div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-14 h-14 rounded-[1.5rem] bg-gradient-to-tr from-sia-pink to-sia-peach flex items-center justify-center shadow-[0_10px_30px_rgba(216,27,96,0.3)]">
-                <Sparkles className="w-7 h-7 text-white animate-pulse" />
-              </div>
-              <div>
-                <h3 className="font-serif italic font-bold text-2xl md:text-3xl text-sia-text">Nearby Wisdom Summary ✨</h3>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-40">AI-Powered Anonymous Insight</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[
-                { icon: Sparkles, text: "Most women nearby mention that the library washroom usually has emergency pads.", color: "text-sia-pink" },
-                { icon: AlertTriangle, text: "Several women reported that the mess-side washroom bins are currently broken.", color: "text-amber-500" },
-                { icon: Droplets, text: "Many women nearby recommend warm jeera water and rest during cramps.", color: "text-blue-500" },
-                { icon: Shield, text: "Hostel Block A is considered one of the safest support zones nearby.", color: "text-green-600" }
-              ].map((item, i) => (
-                <motion.div 
-                  key={i}
-                  whileHover={{ x: 5 }}
-                  className="flex items-start gap-5 p-6 rounded-[2rem] bg-white/40 border border-white/60 shadow-sm"
-                >
-                  <item.icon className={`w-6 h-6 ${item.color} shrink-0 mt-1 opacity-60`} />
-                  <p className="text-base leading-relaxed text-sia-text font-light">“{item.text}”</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+        <WisdomSummary />
 
         {/* Community Feed */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
@@ -1267,7 +1345,7 @@ export default function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages]);
+  }, [chatMessages, isTyping]);
 
   useEffect(() => {
     if (activeTab === 'arin') {
@@ -1434,7 +1512,16 @@ export default function App() {
     setActiveTab('home');
   };
   if (appState === 'peer-chat') {
-    return <PeerChat onBack={() => { setAppState('idle'); setActiveTab('home'); }} />;
+    return <PeerChat onBack={() => setAppState('chat-summary')} />;
+  }
+
+  if (appState === 'chat-summary') {
+    return (
+      <ChatSummary 
+        onOpenChat={() => setAppState('peer-chat')} 
+        onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }} 
+      />
+    );
   }
 
   if (appState === 'finding') {
@@ -1679,7 +1766,7 @@ export default function App() {
               className="hidden md:block"
             />
             
-            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col flex-1 md:h-[700px] overflow-hidden relative">
+            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col h-[500px] md:h-[650px] overflow-hidden relative">
               {/* WhatsApp-style Background Pattern (Subtle) */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
               
