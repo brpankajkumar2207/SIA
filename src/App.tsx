@@ -973,15 +973,67 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
   );
 };
 
-const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMatchFound: () => void }) => {
+const WaitingScreen = ({ 
+  onCancel, 
+  onMatchFound, 
+  onNoHelpFound,
+  currentZone,
+  user
+}: { 
+  onCancel: () => void, 
+  onMatchFound: () => void,
+  onNoHelpFound: () => void,
+  currentZone?: Zone,
+  user?: FirebaseUser | null
+}) => {
   const [matchFound, setMatchFound] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMatchFound(true);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
+    
+    const checkAvailability = async () => {
+      // Simulate brief "searching" delay for UX
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      if (!isMounted) return;
+
+      if (!db || !currentZone || !user) {
+        onNoHelpFound();
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "users_location"));
+        const snapshot = await getDocs(q);
+        let found = false;
+        
+        snapshot.forEach(docSnap => {
+          if (docSnap.id === user.uid) return;
+          const data = docSnap.data();
+          if (data.active === false) return;
+          
+          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
+          const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
+          if (dist <= 0.1 && isRecent) {
+            found = true;
+          }
+        });
+
+        if (found) {
+          setMatchFound(true);
+        } else {
+          onNoHelpFound();
+        }
+      } catch(e) {
+        console.error("Failed to fetch nearby users:", e);
+        onNoHelpFound();
+      }
+    };
+
+    checkAvailability();
+
+    return () => { isMounted = false; };
+  }, [currentZone, user, onNoHelpFound]);
 
   return (
     <div className="min-h-screen pt-32 px-6 flex flex-col items-center bg-sia-cream">
@@ -1645,6 +1697,9 @@ export default function App() {
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  
+  // Track which SOS alerts have already triggered a pop-up to avoid spamming
+  const alertedSOSIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!auth) {
@@ -1791,10 +1846,15 @@ export default function App() {
             console.log(`📏 Distance to alert: ${dist.toFixed(4)} km (Target <= 0.1km)`);
             if (dist <= 0.1) {
               console.log("🎯 MATCH! Triggering SOS Pop-up");
-              // Browser-level alert for maximum visibility
-              const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
-              window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
+              
               setIncomingSOS(sosAlert);
+              
+              // Only trigger the browser alert ONCE per SOS ID
+              if (!alertedSOSIds.current.has(sosAlert.id)) {
+                alertedSOSIds.current.add(sosAlert.id);
+                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+                window.alert(`🚨 EMERGENCY ALERT: ${senderName} nearby needs ${sosAlert.request_type}!`);
+              }
             }
           }
         }
@@ -1825,6 +1885,23 @@ export default function App() {
       console.error("Failed to update location in Firebase:", e);
     }
   };
+
+  // Ensure cleanup on tab close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (user && db) {
+        try {
+          // Fire-and-forget deletion on tab close
+          deleteDoc(doc(db, "users_location", user.uid));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [user, db]);
 
   useEffect(() => {
     if (!user || appState === 'login') return;
@@ -2071,13 +2148,13 @@ export default function App() {
         return;
       }
       
-      // Mark location as inactive before logging out
+      // Delete location from active users before logging out
       if (user && db) {
         try {
-          await updateDoc(doc(db, "users_location", user.uid), { active: false });
-          console.log("🗑️ User marked as inactive in location list.");
+          await deleteDoc(doc(db, "users_location", user.uid));
+          console.log("🗑️ User location completely removed on logout.");
         } catch (e) {
-          console.error("Failed to update location status on logout", e);
+          console.error("Failed to remove location on logout", e);
         }
       }
 
@@ -2128,7 +2205,14 @@ export default function App() {
         <Navbar activeView={activeView} />
         <WaitingScreen
           onCancel={() => setAppState('idle')}
-          onMatchFound={() => setAppState('peer-chat')}
+          onMatchFound={() => setAppState('chat-summary')}
+          onNoHelpFound={() => {
+            window.alert("No available help found nearby.");
+            setAppState('idle');
+            setActiveTab('home');
+          }}
+          currentZone={currentZone}
+          user={user}
         />
       </div>
     );
