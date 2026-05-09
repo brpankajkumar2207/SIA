@@ -367,7 +367,7 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
   );
 };
 
-const ProfilePage = () => {
+const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
   const stats = [
     { label: 'Saved Remedies', value: '12', icon: Bookmark, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Time Capsules', value: '4', icon: Heart, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
@@ -398,7 +398,9 @@ const ProfilePage = () => {
           <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
             <span className="px-4 py-2 rounded-full bg-sia-pink text-white text-[10px] font-bold uppercase tracking-widest shadow-md">Guardian Level 3</span>
-            <span className="px-4 py-2 rounded-full bg-white/60 text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light">Central Region</span>
+            <span className="px-4 py-2 rounded-full bg-white/60 text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light">
+              {currentZone ? currentZone.display_name : 'Detecting Location...'}
+            </span>
           </div>
         </div>
       </div>
@@ -1599,6 +1601,15 @@ export default function App() {
     };
   }, []);
 
+  // --- Auto-detect Location After Login ---
+  useEffect(() => {
+    if (user && appState !== 'login' && !sessionStorage.getItem('arin_zone')) {
+      getZoneWithCache(() => setShowManualZonePicker(true)).then((zone) => {
+        if (zone) setCurrentZone(zone);
+      });
+    }
+  }, [user, appState]);
+
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages, isTyping]);
@@ -1879,7 +1890,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <ProfilePage />
+            <ProfilePage currentZone={currentZone} />
           </motion.div>
         )}
 
