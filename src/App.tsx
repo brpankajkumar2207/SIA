@@ -825,8 +825,9 @@ const ChatSummary = ({
           if (data.active === false) return; // Hide logged out users
           
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          // Use lastSeen for accuracy
-          const isRecent = Date.now() - (data.lastSeen || data.timestamp) < 15 * 60 * 1000;
+          // Use lastSeen for accuracy, strict 1-minute timeout for real-time presence
+          const lastActive = data.lastSeen || data.timestamp || 0;
+          const isRecent = Date.now() - lastActive < 60 * 1000;
           if (dist <= 0.1 && isRecent) {
             nearby.push(data.email);
           }
@@ -1027,7 +1028,9 @@ const WaitingScreen = ({
           if (data.active === false) return;
           
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
+          // Strict 1-minute timeout for real-time presence
+          const lastActive = data.lastSeen || data.timestamp || 0;
+          const isRecent = Date.now() - lastActive < 60 * 1000;
           if (dist <= 0.1 && isRecent) {
             found = true;
           }
