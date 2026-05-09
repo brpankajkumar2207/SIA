@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import ChatRoom from './ChatRoom';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -44,10 +44,10 @@ import { getZoneWithCache, getDistanceKm, Zone as ArinZone } from './services/ar
 import { auth, firebaseInitError, swRegistration } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { capsuleDb, capsuleFirebaseInitError } from './services/capsuleFirebaseConfig';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   FirebaseUser as FirebaseUser
 } from './services/devFirebaseWrapper';
@@ -150,17 +150,17 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+
       // Generate and store Session ID
       const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
       localStorage.setItem('sia_session_id', sessionId);
-      
+
       if (db) {
         await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
           sessionId: sessionId,
           timestamp: Date.now()
         });
-        
+
         // Mark user as active in central users collection
         await setDoc(doc(db, "users", userCredential.user.uid), {
           email: userCredential.user.email,
@@ -289,11 +289,11 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Generate and store Session ID
       const sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
       localStorage.setItem('sia_session_id', sessionId);
-      
+
       if (db) {
         await setDoc(doc(db, "user_sessions", userCredential.user.uid), {
           sessionId: sessionId,
@@ -556,19 +556,19 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
             <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
               {isEditing ? (
                 <div className="flex items-center gap-2">
-                  <input 
-                    value={userName} 
+                  <input
+                    value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink"
                   />
-                  <button 
+                  <button
                     onClick={handleSave}
                     disabled={saving}
                     className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsEditing(false)}
                     className="p-2 bg-sia-pink-light text-sia-pink rounded-full hover:bg-white transition-colors"
                   >
@@ -578,7 +578,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
               ) : (
                 <>
                   <h2 className="font-serif italic font-bold text-4xl text-sia-text">{userName}</h2>
-                  <button 
+                  <button
                     onClick={() => setIsEditing(true)}
                     className="p-2 hover:bg-sia-pink-light rounded-full transition-colors opacity-40 hover:opacity-100"
                   >
@@ -634,7 +634,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
           <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink">Recent Activities & Impact</h3>
           <button className="text-[10px] font-bold uppercase tracking-widest text-sia-text-muted hover:text-sia-pink transition-colors">View All History</button>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {activities.map((activity, i) => (
             <motion.div
@@ -733,7 +733,7 @@ const SettingsPage = () => {
                       <ChevronRight className="w-4 h-4 text-sia-pink opacity-30" />
                     </div>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => item.id === 'reportIssue' && setShowReportModal(true)}
                       className="w-10 h-10 rounded-full bg-sia-pink/5 flex items-center justify-center text-sia-pink hover:bg-sia-pink hover:text-white transition-all group"
                     >
@@ -763,7 +763,7 @@ const SettingsPage = () => {
               className="w-full max-w-lg glass p-10 rounded-[3rem] border border-white shadow-2xl relative"
               onClick={(e) => e.stopPropagation()}
             >
-              <button 
+              <button
                 onClick={() => setShowReportModal(false)}
                 className="absolute top-8 right-8 p-2 hover:bg-sia-pink/5 rounded-full transition-colors"
               >
@@ -784,7 +784,7 @@ const SettingsPage = () => {
                 <p className="text-sm text-sia-text-muted font-light leading-relaxed">
                   Please describe the problem you faced. Whether it's a scam, a safety concern, or an app bug, we're here to listen and help.
                 </p>
-                
+
                 <textarea
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
@@ -968,14 +968,14 @@ const PeerChat = ({ onBack, peerName }: { onBack: () => void, peerName?: string 
   );
 };
 
-const ChatSummary = ({ 
-  onOpenChat, 
+const ChatSummary = ({
+  onOpenChat,
   onHelpReceived,
   currentZone,
   user,
   peerName
-}: { 
-  onOpenChat: () => void | Promise<void>, 
+}: {
+  onOpenChat: () => void | Promise<void>,
   onHelpReceived: () => void | Promise<void>,
   currentZone?: Zone,
   user?: FirebaseUser | null,
@@ -997,50 +997,50 @@ const ChatSummary = ({
         >
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
 
-        <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
-          <MessageCircle className="w-8 h-8 text-sia-pink" />
-        </div>
-
-        <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
-        <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
-          Your secure connection with <span className="font-bold">{peerName || "a verified sister"}</span> is active. You can open the chat or close the session if you've received help.
-        </p>
-
-        <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
-          <div className="flex items-center gap-3 mb-4">
-            <User className="w-5 h-5 text-sia-pink" />
-            <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Connected With</h4>
+          <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
+            <MessageCircle className="w-8 h-8 text-sia-pink" />
           </div>
-          
-          <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
-            <Shield className="w-4 h-4 text-green-500" />
-            <span className="text-sm font-bold text-sia-text">{peerName || "Anonymous Sister"}</span>
-            <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Secure</span>
+
+          <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
+          <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
+            Your secure connection with <span className="font-bold">{peerName || "a verified sister"}</span> is active. You can open the chat or close the session if you've received help.
+          </p>
+
+          <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
+            <div className="flex items-center gap-3 mb-4">
+              <User className="w-5 h-5 text-sia-pink" />
+              <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Connected With</h4>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
+              <Shield className="w-4 h-4 text-green-500" />
+              <span className="text-sm font-bold text-sia-text">{peerName || "Anonymous Sister"}</span>
+              <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Secure</span>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
-          <button
-            onClick={onOpenChat}
-            className="w-full h-16 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.2em] text-[10px] shadow-lg hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3"
-          >
-            <MessageSquare className="w-4 h-4" /> Open Chat
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
+            <button
+              onClick={onOpenChat}
+              className="w-full h-16 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.2em] text-[10px] shadow-lg hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3"
+            >
+              <MessageSquare className="w-4 h-4" /> Open Chat
+            </button>
 
-          <button
-            onClick={onHelpReceived}
-            className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
-          >
-            <CheckCircle className="w-4 h-4" /> Help Received
-          </button>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-dashed border-sia-pink-light/50 w-full">
-          <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-30">
-            <Shield className="w-3 h-3" /> Secure & Anonymous
+            <button
+              onClick={onHelpReceived}
+              className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
+            >
+              <CheckCircle className="w-4 h-4" /> Help Received
+            </button>
           </div>
-        </div>
-      </motion.div>
+
+          <div className="mt-8 pt-6 border-t border-dashed border-sia-pink-light/50 w-full">
+            <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sia-text opacity-30">
+              <Shield className="w-3 h-3" /> Secure & Anonymous
+            </div>
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -1106,15 +1106,15 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
   );
 };
 
-const WaitingScreen = ({ 
-  onCancel, 
-  onMatchFound, 
+const WaitingScreen = ({
+  onCancel,
+  onMatchFound,
   onNoHelpFound,
   currentZone,
   user,
   activeSosId
-}: { 
-  onCancel: () => void | Promise<void>, 
+}: {
+  onCancel: () => void | Promise<void>,
   onMatchFound: (helperName: string) => void | Promise<void>,
   onNoHelpFound: () => void | Promise<void>,
   currentZone?: Zone,
@@ -1127,11 +1127,11 @@ const WaitingScreen = ({
   useEffect(() => {
     let isMounted = true;
     let unsubscribe: () => void;
-    
+
     const listenForHelper = async () => {
       // Simulate brief "searching" delay for UX
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       if (!isMounted) return;
 
       if (!db || !activeSosId) {
@@ -1154,7 +1154,7 @@ const WaitingScreen = ({
             }
           }
         });
-      } catch(e) {
+      } catch (e) {
         console.error("Failed to listen for helper:", e);
         onNoHelpFound();
       }
@@ -1162,8 +1162,8 @@ const WaitingScreen = ({
 
     listenForHelper();
 
-    return () => { 
-      isMounted = false; 
+    return () => {
+      isMounted = false;
       if (unsubscribe) unsubscribe();
     };
   }, [activeSosId, onNoHelpFound, onMatchFound]);
@@ -1350,22 +1350,20 @@ const CapsuleCard = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => onVote('up')}
-              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
-                userVote === 'up'
-                  ? 'bg-green-50 border-green-300 text-green-700'
-                  : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
-              }`}
+              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${userVote === 'up'
+                ? 'bg-green-50 border-green-300 text-green-700'
+                : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
+                }`}
             >
               👍 {thumbsUp}
             </button>
 
             <button
               onClick={() => onVote('down')}
-              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
-                userVote === 'down'
-                  ? 'bg-red-50 border-red-300 text-red-700'
-                  : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
-              }`}
+              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${userVote === 'down'
+                ? 'bg-red-50 border-red-300 text-red-700'
+                : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
+                }`}
             >
               👎 {thumbsDown}
             </button>
@@ -1615,7 +1613,7 @@ const TimeCapsulePage = ({
           </motion.button>
         </div>
 
-       
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
           {groupedCapsules.length === 0 && (
@@ -1732,7 +1730,7 @@ const ArinCommunityPage = ({
   onVoteResponse: (response: ArinResponse, vote: CapsuleVote) => void,
   currentZone: Zone,
   responses: ArinResponse[],
-user: FirebaseUser | null
+  user: FirebaseUser | null
 
 }) => (
   <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
@@ -1816,28 +1814,26 @@ user: FirebaseUser | null
                       {r.show_original ? r.text : r.safe_summary}
                     </p>
                     <div className="mt-3 flex items-center justify-end gap-3">
-  <button
-    onClick={() => onVoteResponse(r, 'up')}
-    className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
-      r.votes?.[user?.uid || ''] === 'up'
-        ? 'bg-green-50 border-green-300 text-green-700'
-        : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
-    }`}
-  >
-    👍 {r.thumbsUp || 0}
-  </button>
+                      <button
+                        onClick={() => onVoteResponse(r, 'up')}
+                        className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${r.votes?.[user?.uid || ''] === 'up'
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
+                          }`}
+                      >
+                        👍 {r.thumbsUp || 0}
+                      </button>
 
-  <button
-    onClick={() => onVoteResponse(r, 'down')}
-    className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
-      r.votes?.[user?.uid || ''] === 'down'
-        ? 'bg-red-50 border-red-300 text-red-700'
-        : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
-    }`}
-  >
-    👎 {r.thumbsDown || 0}
-  </button>
-</div>
+                      <button
+                        onClick={() => onVoteResponse(r, 'down')}
+                        className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${r.votes?.[user?.uid || ''] === 'down'
+                          ? 'bg-red-50 border-red-300 text-red-700'
+                          : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
+                          }`}
+                      >
+                        👎 {r.thumbsDown || 0}
+                      </button>
+                    </div>
 
                   </>
                 ) : (
@@ -1990,7 +1986,7 @@ export default function App() {
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
-  
+
   // Track which SOS alerts have already triggered a pop-up to avoid spamming
   const alertedSOSIds = useRef<Set<string>>(new Set());
   const sessionStartTime = useRef<number>(Date.now());
@@ -2006,7 +2002,7 @@ export default function App() {
         setUser(firebaseUser);
         sessionStartTime.current = Date.now();
         setAppState('idle');
-        
+
         // Request notification permission upfront on login
         if ("Notification" in window && Notification.permission === "default") {
           Notification.requestPermission().then(p => console.log("🔔 Notification permission:", p));
@@ -2028,7 +2024,7 @@ export default function App() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const localSessionId = localStorage.getItem('sia_session_id');
-        
+
         // If the database has a session ID and it doesn't match our local one
         if (data.sessionId && localSessionId && data.sessionId !== localSessionId) {
           console.warn("🔒 Security Alert: Account accessed from another device. Logging out.");
@@ -2096,7 +2092,7 @@ export default function App() {
       if (event.data && event.data.type === 'SOS_ACKNOWLEDGED') {
         const sosId = event.data.sosId;
         console.log('✅ [SOS] Acknowledged notification for SOS ID:', sosId);
-        
+
         if (!user || !db) {
           console.error("Cannot claim SOS: User or DB not initialized.");
           return;
@@ -2110,7 +2106,7 @@ export default function App() {
             if (!snap.exists()) {
               throw "SOS Alert does not exist.";
             }
-            
+
             const data = snap.data();
             if (data.status !== 'searching') {
               throw "Another sister has already responded to this SOS.";
@@ -2123,7 +2119,7 @@ export default function App() {
               helper_id: user.uid,
               helper_name: helperName
             });
-            
+
             // Set local state to navigate to chat
             setConnectedPeerName(data.name || "Anonymous Sister");
           });
@@ -2131,11 +2127,11 @@ export default function App() {
           // If transaction succeeded:
           setActiveSosId(sosId);
           setAppState('peer-chat');
-          
+
         } catch (error) {
           console.error("❌ Failed to claim SOS:", error);
-          window.alert(error === "Another sister has already responded to this SOS." 
-            ? error 
+          window.alert(error === "Another sister has already responded to this SOS."
+            ? error
             : "Failed to connect to the SOS session.");
         }
       }
@@ -2185,7 +2181,7 @@ export default function App() {
 
     // Listen for Active SOS Alerts
     const sosQuery = query(
-      collection(db, "active_sos_alerts"), 
+      collection(db, "active_sos_alerts"),
       where("active", "==", true)
     );
     const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
@@ -2201,16 +2197,16 @@ export default function App() {
         if (change.type === "added" || change.type === "modified") {
           const alertData = change.doc.data();
           const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
-          
+
           // Filter with detailed logging
           const isOthers = sosAlert.user_id !== user.uid;
           const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
           const isNewForUs = sosAlert.timestamp >= sessionStartTime.current - 5000;
           const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
           const hasLocation = currentZone.center.lat !== 0;
-          
+
           console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}: status=${sosAlert.status}, isOthers=${isOthers}, isRecent=${isRecent}, isNewForUs=${isNewForUs}, alreadyAlerted=${alreadyAlerted}`);
-          
+
           if (isOthers && isRecent && hasLocation) {
             // Auto-Drop Logic: If accepted by someone else, remove notification
             if (sosAlert.status === 'accepted' && sosAlert.helper_id !== user.uid) {
@@ -2234,69 +2230,69 @@ export default function App() {
             if (sosAlert.status === 'searching' && isNewForUs && !alreadyAlerted) {
               const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
               console.log(`📏 [SOS] Distance: ${dist.toFixed(3)} km`);
-              
+
               if (dist <= 0.5) {
                 console.log("🎯 MATCH! Triggering SOS notification for:", sosAlert.id);
-                
+
                 // Mark as alerted IMMEDIATELY to prevent re-triggering
                 alertedSOSIds.current.add(sosAlert.id);
-                
-                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
-              const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
-              const body = `Needs ${sosAlert.request_type}!`;
-              
-              console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
-              
-              // Try multiple notification methods for Android compatibility
-              const sendNotification = async () => {
-                try {
-                  // Method 1: postMessage to our service worker (best Android support)
-                  if (swRegistration?.active) {
-                    swRegistration.active.postMessage({
-                      type: 'SOS_ALERT',
-                      title,
-                      body,
-                      tag: sosAlert.id
-                    });
-                    console.log("✅ [SOS] Sent via SW postMessage!");
-                    return;
-                  }
 
-                  // Method 2: Get any active service worker registration
-                  if ('serviceWorker' in navigator) {
-                    const reg = await navigator.serviceWorker.ready;
-                    if (reg.active) {
-                      reg.active.postMessage({
+                const senderName = sosAlert.name || sosAlert.email.split('@')[0] || "A user";
+                const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
+                const body = `Needs ${sosAlert.request_type}!`;
+
+                console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
+
+                // Try multiple notification methods for Android compatibility
+                const sendNotification = async () => {
+                  try {
+                    // Method 1: postMessage to our service worker (best Android support)
+                    if (swRegistration?.active) {
+                      swRegistration.active.postMessage({
                         type: 'SOS_ALERT',
                         title,
                         body,
                         tag: sosAlert.id
                       });
-                      console.log("✅ [SOS] Sent via navigator.serviceWorker.ready!");
+                      console.log("✅ [SOS] Sent via SW postMessage!");
                       return;
                     }
-                  }
 
-                  // Method 3: Direct showNotification (desktop fallback)
-                  if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification(title, { body, icon: '/icon.png' });
-                    console.log("✅ [SOS] Sent via new Notification()");
-                    return;
-                  }
+                    // Method 2: Get any active service worker registration
+                    if ('serviceWorker' in navigator) {
+                      const reg = await navigator.serviceWorker.ready;
+                      if (reg.active) {
+                        reg.active.postMessage({
+                          type: 'SOS_ALERT',
+                          title,
+                          body,
+                          tag: sosAlert.id
+                        });
+                        console.log("✅ [SOS] Sent via navigator.serviceWorker.ready!");
+                        return;
+                      }
+                    }
 
-                  // Method 4: window.alert as last resort
-                  window.alert(`${title}\n${body}`);
-                  console.log("⚠️ [SOS] Fell back to window.alert");
-                } catch (err) {
-                  console.error("❌ [SOS] All notification methods failed:", err);
-                  window.alert(`${title}\n${body}`);
-                }
-              };
-              
-              sendNotification();
-            } else {
-              console.log(`❌ [SOS] Too far: ${dist.toFixed(3)} km > 0.5 km`);
-            }
+                    // Method 3: Direct showNotification (desktop fallback)
+                    if ("Notification" in window && Notification.permission === "granted") {
+                      new Notification(title, { body, icon: '/icon.png' });
+                      console.log("✅ [SOS] Sent via new Notification()");
+                      return;
+                    }
+
+                    // Method 4: window.alert as last resort
+                    window.alert(`${title}\n${body}`);
+                    console.log("⚠️ [SOS] Fell back to window.alert");
+                  } catch (err) {
+                    console.error("❌ [SOS] All notification methods failed:", err);
+                    window.alert(`${title}\n${body}`);
+                  }
+                };
+
+                sendNotification();
+              } else {
+                console.log(`❌ [SOS] Too far: ${dist.toFixed(3)} km > 0.5 km`);
+              }
             }
           }
         }
@@ -2509,11 +2505,11 @@ export default function App() {
       // Remove the temp message
       setArinResponses(prev => prev.filter(r => r.id !== tempResponseId));
 
-    if (moderation.verdict !== 'APPROVED') {
-       alert("Your response could not be posted: " + (moderation.reason || "Please make the reply more helpful, safe, and specific."));
-       setIsVerifying(false);
-       return;
-}
+      if (moderation.verdict !== 'APPROVED') {
+        alert("Your response could not be posted: " + (moderation.reason || "Please make the reply more helpful, safe, and specific."));
+        setIsVerifying(false);
+        return;
+      }
 
 
       const resData = {
@@ -2605,28 +2601,31 @@ export default function App() {
         setShowLogoutModal(false);
         return;
       }
-      
+
       // Mark location and user as inactive before logging out
       if (user && db) {
         try {
           const userRef = doc(db, "users", user.uid);
           const locRef = doc(db, "users_location", user.uid);
-          
+
           await Promise.all([
             updateDoc(userRef, { active: false }),
             deleteDoc(locRef)
           ]);
-          
+
           console.log("🗑️ User marked as inactive and location removed.");
         } catch (e) {
-          console.error("Failed to update location status on logout", e);
+          console.error("Failed to update location status on logout:", e);
         }
       }
 
       await signOut(auth);
       setShowLogoutModal(false);
+      setAppState('login');
+      setUser(null);
     } catch (err) {
       console.error('Logout error:', err);
+      setShowLogoutModal(false);
     }
   };
 
@@ -2650,7 +2649,26 @@ export default function App() {
     );
   }
   if (appState === 'peer-chat') {
-    return <PeerChat onBack={() => setAppState('chat-summary')} peerName={connectedPeerName} />;
+    return (
+      <ChatRoom
+        roomId={activeSosId || "room_123"}
+        currentUser={user?.uid || "user1"}
+        peerName={connectedPeerName}
+        onBack={() => setAppState('chat-summary')}
+        onEndSession={async () => {
+          if (activeSosId && db) {
+            try {
+              await updateDoc(doc(db, "active_sos_alerts", activeSosId), { active: false });
+            } catch (e) {
+              console.error("Failed to mark session as inactive:", e);
+            }
+          }
+          setActiveSosId(null);
+          setConnectedPeerName(null);
+          setActiveTab('home');
+        }}
+      />
+    );
   }
 
   if (appState === 'chat-summary') {
@@ -2918,29 +2936,29 @@ export default function App() {
                   onVoteResponse={(response, vote) => {
                     const userId = user?.uid || '';
                     const previousVote = response.votes?.[userId];
-                    
+
                     // Calculate new counts
                     let newThumbsUp = response.thumbsUp || 0;
                     let newThumbsDown = response.thumbsDown || 0;
-                    
+
                     // Remove previous vote if any
                     if (previousVote === 'up') newThumbsUp = Math.max(0, newThumbsUp - 1);
                     if (previousVote === 'down') newThumbsDown = Math.max(0, newThumbsDown - 1);
-                    
+
                     // Add new vote
                     if (vote === 'up') newThumbsUp += 1;
                     if (vote === 'down') newThumbsDown += 1;
-                    
+
                     // Update local state
-                    setArinResponses(prev => prev.map(r => 
-                      r.id === response.id ? { 
-                        ...r, 
+                    setArinResponses(prev => prev.map(r =>
+                      r.id === response.id ? {
+                        ...r,
                         votes: { ...r.votes, [userId]: vote },
                         thumbsUp: newThumbsUp,
                         thumbsDown: newThumbsDown
                       } : r
                     ));
-                    
+
                     // Persist to Firebase
                     const rRef = doc(db, "arin_responses", response.id);
                     updateDoc(rRef, {
@@ -2983,7 +3001,7 @@ export default function App() {
                   {/* Header - Integrated with SIA Branding */}
                   <div className="flex items-center justify-between p-4 md:p-8 bg-white/80 backdrop-blur-md border-b border-sia-pink-light/30 z-10">
                     <div className="flex items-center gap-6">
-                      <motion.div 
+                      <motion.div
                         animate={{ rotate: [0, 15, -15, 0] }}
                         transition={{ repeat: Infinity, duration: 4 }}
                         className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-xl"
@@ -3019,9 +3037,9 @@ export default function App() {
                         <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
                       ))}
                     </AnimatePresence>
-                    
+
                     {isTyping && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex justify-start mb-4 px-4"
