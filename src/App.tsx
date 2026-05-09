@@ -49,6 +49,16 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+=======
+import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
+<<<<<<< HEAD
+import { db } from './services/firebaseConfig';
+>>>>>>> f77f7def8e4cea197784094294f99f6cbc5bdc73
 import { 
   collection, 
   addDoc, 
@@ -61,6 +71,13 @@ import {
   increment,
   setDoc
 } from "firebase/firestore";
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> dcfae4e5fd3a11404b25cabd0d8fc589680cc88e
+>>>>>>> 62d81de38096f85eaf06ba6b22cece2798ee27cf
+>>>>>>> 3bcb18bffced23f9fd5f17048c212e5a1a857e1e
+>>>>>>> f77f7def8e4cea197784094294f99f6cbc5bdc73
 
 
 
