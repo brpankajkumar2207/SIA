@@ -31,6 +31,7 @@ import {
   Bell,
   Moon,
   Sun,
+  Users,
   CheckCircle,
   Award,
   Bookmark,
@@ -861,9 +862,9 @@ const LogoutModal = ({ onClose, onLogout }: { onClose: () => void, onLogout: () 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (tab: Tab) => void }) => {
   const tabs: { id: Tab; icon: any; label: string }[] = [
     { id: 'home', icon: Shield, label: 'Home' },
-    { id: 'arin', icon: MessageSquare, label: 'Arin' },
+    { id: 'arin', icon: Users, label: 'Hub' },
     { id: 'sakhi', icon: Sparkles, label: 'Sakhi' },
-    { id: 'capsule', icon: Heart, label: 'Capsule' },
+    { id: 'capsule', icon: Heart, label: 'NearHer' },
 
   ];
 
@@ -973,13 +974,15 @@ const ChatSummary = ({
   onHelpReceived,
   currentZone,
   user,
-  peerName
+  peerName,
+  isRequester
 }: {
   onOpenChat: () => void | Promise<void>,
   onHelpReceived: () => void | Promise<void>,
   currentZone?: Zone,
   user?: FirebaseUser | null,
-  peerName?: string | null
+  peerName?: string | null,
+  isRequester?: boolean
 }) => {
   return (
     <motion.div
@@ -1027,12 +1030,14 @@ const ChatSummary = ({
               <MessageSquare className="w-4 h-4" /> Open Chat
             </button>
 
-            <button
-              onClick={onHelpReceived}
-              className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
-            >
-              <CheckCircle className="w-4 h-4" /> Help Received
-            </button>
+            {isRequester && (
+              <button
+                onClick={onHelpReceived}
+                className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
+              >
+                <CheckCircle className="w-4 h-4" /> Help Received
+              </button>
+            )}
           </div>
 
           <div className="mt-8 pt-6 border-t border-dashed border-sia-pink-light/50 w-full">
@@ -1594,7 +1599,7 @@ const TimeCapsulePage = ({
 
       <div className="relative z-10">
         <SectionHeading
-          title="Time Capsule 💗"
+          title="NearHer 💗"
           subtitle="Anonymous wisdom, comfort, and survival notes left by women within 300 meters."
         />
 
@@ -1619,7 +1624,7 @@ const TimeCapsulePage = ({
           {groupedCapsules.length === 0 && (
             <div className="md:col-span-2 p-14 rounded-[3rem] border border-dashed border-sia-pink-light/50 bg-white/40 text-center">
               <p className="font-serif italic text-2xl text-sia-text opacity-40">
-                No capsules nearby yet. You can be the first within this 300m circle.
+                No NearHer notes nearby yet. You can be the first within this 300m circle.
               </p>
             </div>
           )}
@@ -1735,7 +1740,7 @@ const ArinCommunityPage = ({
 }) => (
   <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
     <div className="text-center mb-12 md:mb-16">
-      <h2 className="font-serif italic font-bold text-5xl md:text-7xl text-sia-text mb-4 tracking-tight">ARIN Community</h2>
+      <h2 className="font-serif italic font-bold text-5xl md:text-7xl text-sia-text mb-4 tracking-tight">Hub Community</h2>
       <p className="text-sia-text-muted max-w-2xl mx-auto font-light leading-relaxed text-base md:text-lg">
         Anonymous peer-support in your region. Your wisdom stays in your city.
       </p>
@@ -1955,9 +1960,9 @@ const LocationExplainerModal = ({
       <div className="w-20 h-20 bg-sia-pink-light/30 rounded-full flex items-center justify-center mx-auto mb-8">
         <MapPin className="w-10 h-10 text-sia-pink" />
       </div>
-      <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-4 tracking-tight">Find Your ARIN City</h3>
+      <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-4 tracking-tight">Find Your Hub City</h3>
       <p className="text-sia-text-muted font-light leading-relaxed mb-10">
-        ARIN connects you with verified sisters in your city — anonymously.
+        Hub connects you with verified sisters in your city — anonymously.
         Your exact location is never stored.
       </p>
       <div className="space-y-4">
@@ -2070,6 +2075,7 @@ export default function App() {
   const [isLocating, setIsLocating] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [activeSosId, setActiveSosId] = useState<string | null>(null);
+  const [isRequester, setIsRequester] = useState(false);
   const [connectedPeerName, setConnectedPeerName] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -2125,6 +2131,7 @@ export default function App() {
           });
 
           // If transaction succeeded:
+          setIsRequester(false); // We are the HELPER
           setActiveSosId(sosId);
           setAppState('peer-chat');
 
@@ -2550,6 +2557,7 @@ export default function App() {
   const handleSelectOption = async (option: string) => {
     setShowSOSModal(false);
     setAppState('finding');
+    setIsRequester(true); // We are the REQUESTER
 
     // Broadcast SOS Alert to nearby users
     if (db && user && currentZone.center.lat !== 0) {
@@ -2654,6 +2662,7 @@ export default function App() {
         roomId={activeSosId || "room_123"}
         currentUser={user?.uid || "user1"}
         peerName={connectedPeerName}
+        isRequester={isRequester}
         onBack={() => setAppState('chat-summary')}
         onEndSession={async () => {
           if (activeSosId && db) {
@@ -2665,6 +2674,7 @@ export default function App() {
           }
           setActiveSosId(null);
           setConnectedPeerName(null);
+          setAppState('idle');
           setActiveTab('home');
         }}
       />
@@ -2691,6 +2701,7 @@ export default function App() {
         currentZone={currentZone}
         user={user}
         peerName={connectedPeerName}
+        isRequester={isRequester}
       />
     );
   }

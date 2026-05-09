@@ -25,12 +25,14 @@ function ChatRoom({
   roomId, 
   currentUser, 
   peerName, 
+  isRequester,
   onBack,
   onEndSession 
 }: { 
   roomId: string, 
   currentUser: string, 
   peerName?: string | null, 
+  isRequester?: boolean,
   onBack: () => void,
   onEndSession?: () => Promise<void>
 }) {
@@ -217,17 +219,19 @@ function ChatRoom({
           </div>
         </form>
         
-        <div className="mt-6 flex items-center justify-between">
-          <p className="text-[9px] uppercase tracking-[0.2em] font-black text-sia-pink/40 flex items-center gap-2">
-            <CheckCircle className="w-3 h-3" /> Help Received?
-          </p>
-          <button 
-            onClick={handleEndSession}
-            className="text-[9px] uppercase tracking-[0.2em] font-black text-red-500 hover:text-red-600 transition-colors bg-red-50 px-4 py-2 rounded-full border border-red-100"
-          >
-            End Session & Delete Data
-          </button>
-        </div>
+        {isRequester && (
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-[9px] uppercase tracking-[0.2em] font-black text-sia-pink/40 flex items-center gap-2">
+              <CheckCircle className="w-3 h-3" /> Help Received?
+            </p>
+            <button 
+              onClick={handleEndSession}
+              className="text-[9px] uppercase tracking-[0.2em] font-black text-red-500 hover:text-red-600 transition-colors bg-red-50 px-4 py-2 rounded-full border border-red-100"
+            >
+              End Session & Delete Data
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
