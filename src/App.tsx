@@ -806,8 +806,10 @@ const ChatSummary = ({
         const nearby: string[] = [];
         
         snapshot.forEach(doc => {
-          // Temporarily commented out for testing: if (doc.id === user.uid) return;
+          if (doc.id === user.uid) return; // Hide self
           const data = doc.data();
+          if (data.active === false) return; // Hide logged out users
+          
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
           // Only show users active in the last 15 minutes, within 100 meters
           const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
@@ -1816,7 +1818,8 @@ export default function App() {
         email: user.email || 'anonymous@sia.com',
         lat: zone.center.lat,
         lng: zone.center.lng,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        active: true
       });
     } catch (e) {
       console.error("Failed to update location in Firebase:", e);
@@ -2068,13 +2071,13 @@ export default function App() {
         return;
       }
       
-      // Remove location from active users before logging out
+      // Mark location as inactive before logging out
       if (user && db) {
         try {
-          await deleteDoc(doc(db, "users_location", user.uid));
-          console.log("🗑️ Location removed from active users list.");
+          await updateDoc(doc(db, "users_location", user.uid), { active: false });
+          console.log("🗑️ User marked as inactive in location list.");
         } catch (e) {
-          console.error("Failed to remove location on logout", e);
+          console.error("Failed to update location status on logout", e);
         }
       }
 
