@@ -523,20 +523,6 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
     }
   };
 
-  const activities = [
-    { type: 'Response', text: 'Responded to "How to deal with extreme cramps?"', time: '2h ago', status: 'Verified' },
-    { type: 'Help', text: 'Provided emergency pads to a sister in Library', time: '1 day ago', status: 'Completed' },
-    { type: 'Response', text: 'Shared experience about Gate 2 Pharmacy safety', time: '3 days ago', status: 'Verified' },
-    { type: 'Help', text: 'Walked with a sister to Hostel Block B', time: '1 week ago', status: 'Completed' },
-  ];
-
-  const impactStats = [
-    { label: 'Sisters Helped', value: '14', icon: HeartHandshake, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
-    { label: 'Responses Posted', value: '42', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Trust Level', value: 'Guardian', icon: Shield, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Community Karma', value: '850', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
-  ];
-
   return (
     <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
       <div className="flex flex-col md:flex-row items-center gap-10 mb-16 bg-white/40 p-10 rounded-[3.5rem] border border-white/60 shadow-sm relative overflow-hidden">
@@ -587,78 +573,9 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                   </button>
                 </>
               )}
-              <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-100">Verified</div>
-            </div>
-            <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
-          </div>
-          <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
-            <span className="px-4 py-2 rounded-full bg-sia-pink text-white text-[10px] font-bold uppercase tracking-widest shadow-md">Guardian Level 3</span>
-            <span className="px-4 py-2 rounded-full bg-white/60 text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light">
-              {currentZone ? currentZone.display_name : 'Detecting Location...'}
-            </span>
-            {currentZone && (
-              <span className="px-4 py-2 rounded-full bg-sia-cream text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light/30">
-                {currentZone.center.lat.toFixed(4)}°N, {currentZone.center.lng.toFixed(4)}°E
-              </span>
-            )}
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
-              <MessageCircle className="w-4 h-4 text-sia-pink/40" />
-              <span className="text-sm font-light">{userEmail}</span>
-            </div>
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
-              <AlertCircle className="w-4 h-4 text-sia-pink/40" />
-              <span className="text-sm font-light">Emergency: +91 98765 43210</span>
-            </div>
-          </div>
+          <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-        {impactStats.map((stat, i) => (
-          <motion.div
-            key={i}
-            whileHover={{ y: -5 }}
-            className="p-8 rounded-[2.5rem] bg-white border border-sia-pink-light/30 shadow-sm flex flex-col items-center text-center group transition-all hover:shadow-lg"
-          >
-            <div className={`w-14 h-14 rounded-2xl ${stat.bg} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text-muted mb-1 opacity-60">{stat.label}</span>
-            <span className="text-2xl font-bold text-sia-text">{stat.value}</span>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="space-y-8">
-        <div className="flex items-center justify-between px-6">
-          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink">Recent Activities & Impact</h3>
-          <button className="text-[10px] font-bold uppercase tracking-widest text-sia-text-muted hover:text-sia-pink transition-colors">View All History</button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {activities.map((activity, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.02 }}
-              className="p-8 rounded-[3rem] bg-white/60 border border-sia-pink-light shadow-sm flex gap-6 items-start group"
-            >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${activity.type === 'Help' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
-                {activity.type === 'Help' ? <HeartHandshake className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${activity.type === 'Help' ? 'text-green-500' : 'text-blue-500'}`}>{activity.type}</span>
-                  <span className="text-[9px] font-bold text-sia-text-muted opacity-40 uppercase tracking-widest">{activity.time}</span>
-                </div>
-                <p className="text-sia-text font-serif italic text-base leading-snug mb-3">"{activity.text}"</p>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sia-warm-bg text-[8px] font-black uppercase tracking-widest text-sia-text opacity-40">
-                  <CheckCircle className="w-2.5 h-2.5" /> {activity.status}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
       </div>
     </div>
   );
