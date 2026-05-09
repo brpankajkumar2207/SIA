@@ -110,7 +110,16 @@ export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone
               const data = await response.json();
               if (data && data.address) {
                 const addr = data.address;
-                const preciseName = addr.neighbourhood || addr.suburb || addr.city_district || addr.town || addr.village || zone.display_name;
+                const localArea = addr.neighbourhood || addr.suburb || addr.city_district || addr.village || '';
+                const cityArea = addr.city || addr.town || addr.county || '';
+                
+                let preciseName = zone.display_name;
+                if (localArea && cityArea && localArea !== cityArea) {
+                  preciseName = `${localArea}, ${cityArea}`;
+                } else if (localArea || cityArea) {
+                  preciseName = localArea || cityArea;
+                }
+                
                 preciseZone.display_name = preciseName;
               }
             }
