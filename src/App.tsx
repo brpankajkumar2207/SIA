@@ -3116,8 +3116,6 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-
-      </AnimatePresence>
     </div>
   );
 }
