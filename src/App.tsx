@@ -2836,13 +2836,34 @@ export default function App() {
         <Navbar activeView={activeView} />
         <WaitingScreen
           onCancel={async () => {
-            if (activeSosId && db) {
+            const sosIdToCancel = activeSosId;
+
+            // 1. Immediately dismiss notifications for helpers
+            if (sosIdToCancel) {
+              const cancelMsg = { type: 'CANCEL_SOS_ALERT', tag: sosIdToCancel };
+              if (swRegistration?.active) {
+                swRegistration.active.postMessage(cancelMsg);
+              } else if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                  if (reg.active) reg.active.postMessage(cancelMsg);
+                });
+              }
+              // Also close any native desktop fallback
+              if (nativeNotifications.current[sosIdToCancel]) {
+                nativeNotifications.current[sosIdToCancel].close();
+                delete nativeNotifications.current[sosIdToCancel];
+              }
+            }
+
+            // 2. Mark alert inactive in Firestore
+            if (sosIdToCancel && db) {
               try {
-                await updateDoc(doc(db, "active_sos_alerts", activeSosId), { active: false });
+                await updateDoc(doc(db, "active_sos_alerts", sosIdToCancel), { active: false, status: 'closed' });
               } catch (e) {
                 console.error("Failed to cancel session:", e);
               }
             }
+
             setActiveSosId(null);
             setConnectedPeerName(null);
             setAppState('idle');
