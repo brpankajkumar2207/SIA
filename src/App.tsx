@@ -105,6 +105,7 @@ type SOSAlert = {
   message?: string;
   request_type?: string;
   status: 'searching' | 'accepted' | 'closed';
+  active?: boolean;
   helper_id?: string | null;
   helper_name?: string | null;
 };
@@ -2076,6 +2077,7 @@ export default function App() {
 
   // Track which SOS alerts have already triggered a pop-up to avoid spamming
   const alertedSOSIds = useRef<Set<string>>(new Set());
+  const nativeNotifications = useRef<Record<string, Notification>>({});
   const sessionStartTime = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -2297,14 +2299,18 @@ export default function App() {
           console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}: status=${sosAlert.status}, isOthers=${isOthers}, isRecent=${isRecent}, isNewForUs=${isNewForUs}, alreadyAlerted=${alreadyAlerted}`);
 
           if (isOthers && isRecent && hasLocation) {
-            // Auto-Drop Logic: If accepted by someone else, remove notification
-            if (sosAlert.status === 'accepted' && sosAlert.helper_id !== user.uid) {
-              console.log("🚫 [Auto-Drop] Someone else accepted SOS. Removing notification.");
+            // If the SOS is no longer active (cancelled or ended), try to close its notification
+            if (sosAlert.status !== 'searching' || !sosAlert.active) {
+              // Close native fallback notification if it exists
+              if (nativeNotifications.current[sosAlert.id]) {
+                nativeNotifications.current[sosAlert.id].close();
+                delete nativeNotifications.current[sosAlert.id];
+                console.log(`✅ [SOS] Closed native notification for tag: ${sosAlert.id}`);
+              }
+
               if (swRegistration?.active) {
-                swRegistration.active.postMessage({
-                  type: 'CANCEL_SOS_ALERT',
-                  tag: sosAlert.id
-                });
+                swRegistration.active.postMessage({ type: 'CANCEL_SOS_ALERT', tag: sosAlert.id });
+                console.log(`✅ [SOS] Sent CANCEL_SOS_ALERT to SW for tag: ${sosAlert.id}`);
               } else if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(reg => {
                   if (reg.active) {
@@ -2363,7 +2369,14 @@ export default function App() {
 
                     // Method 3: Direct showNotification (desktop fallback)
                     if ("Notification" in window && Notification.permission === "granted") {
-                      new Notification(title, { body, icon: '/icon.png' });
+                      const notification = new Notification(title, { body, icon: '/icon.png', tag: sosAlert.id });
+                      nativeNotifications.current[sosAlert.id] = notification;
+                      
+                      notification.onclick = () => {
+                        window.focus();
+                        notification.close();
+                      };
+                      
                       console.log("✅ [SOS] Sent via new Notification()");
                       return;
                     }
