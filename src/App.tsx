@@ -2025,6 +2025,11 @@ export default function App() {
         setUser(firebaseUser);
         sessionStartTime.current = Date.now();
         setAppState('idle');
+        
+        // Request notification permission upfront on login
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission().then(p => console.log("🔔 Notification permission:", p));
+        }
       } else {
         setUser(null);
         setAppState('login');
@@ -2143,25 +2148,38 @@ export default function App() {
     );
     const unsubscribeSOS = onSnapshot(sosQuery, (snapshot) => {
       // Only process if user is logged in and session is active
-      if (!user || appState === 'login') return;
+      if (!user || appState === 'login') {
+        console.log(`⏭️ [SOS] Skipping: user=${!!user}, appState=${appState}`);
+        return;
+      }
 
-      console.log(`🔔 [SOS Listener] Received update with ${snapshot.size} active alerts`);
+      console.log(`🔔 [SOS Listener] Received update with ${snapshot.size} active alerts, ${snapshot.docChanges().length} changes`);
       snapshot.docChanges().forEach((change: any) => {
+        console.log(`📋 [SOS] Change type: ${change.type}, doc: ${change.doc.id}`);
         if (change.type === "added" || change.type === "modified") {
           const alertData = change.doc.data();
           const sosAlert = { id: change.doc.id, ...alertData } as SOSAlert;
           
-          // Filter: Others only, recent only (within 5 mins), NOT from before we logged in, and not already alerted
+          // Filter with detailed logging
           const isOthers = sosAlert.user_id !== user.uid;
           const isRecent = Date.now() - sosAlert.timestamp < 5 * 60 * 1000;
-          const isNewForUs = sosAlert.timestamp >= sessionStartTime.current - 5000; // 5s grace for latency
+          const isNewForUs = sosAlert.timestamp >= sessionStartTime.current - 5000;
           const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
+          const hasLocation = currentZone.center.lat !== 0;
           
-          if (isOthers && isRecent && isNewForUs && !alreadyAlerted && currentZone.center.lat !== 0) {
+          console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}:`, {
+            isOthers, isRecent, isNewForUs, alreadyAlerted, hasLocation,
+            alertUserId: sosAlert.user_id, myUid: user.uid,
+            alertTime: sosAlert.timestamp, sessionStart: sessionStartTime.current,
+            timeDiff: Date.now() - sosAlert.timestamp,
+          });
+          
+          if (isOthers && isRecent && isNewForUs && !alreadyAlerted && hasLocation) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
+            console.log(`📏 [SOS] Distance: ${dist.toFixed(3)} km`);
             
-            if (dist <= 0.5) { // Matched the 500m relaxation
-              console.log("🎯 MATCH! Triggering SOS Pop-up for:", sosAlert.id);
+            if (dist <= 0.5) {
+              console.log("🎯 MATCH! Triggering SOS notification for:", sosAlert.id);
               
               // Mark as alerted IMMEDIATELY to prevent re-triggering
               alertedSOSIds.current.add(sosAlert.id);
@@ -2172,17 +2190,18 @@ export default function App() {
               const title = `🚨 EMERGENCY ALERT: ${senderName} nearby`;
               const body = `Needs ${sosAlert.request_type}!`;
               
-              if ("Notification" in window) {
-                if (Notification.permission === "granted") {
-                  new Notification(title, { body });
-                } else if (Notification.permission !== "denied") {
-                  Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                      new Notification(title, { body });
-                    }
-                  });
-                }
+              console.log(`🔔 [SOS] Notification permission: ${"Notification" in window ? Notification.permission : "NOT_SUPPORTED"}`);
+              
+              if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body, icon: '/icon.png' });
+                console.log("✅ [SOS] Push notification sent!");
+              } else {
+                // Fallback to window.alert if notifications not permitted
+                window.alert(`${title}\n${body}`);
+                console.log("⚠️ [SOS] Fell back to window.alert");
               }
+            } else {
+              console.log(`❌ [SOS] Too far: ${dist.toFixed(3)} km > 0.5 km`);
             }
           }
         }
