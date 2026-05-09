@@ -1321,7 +1321,7 @@ export default function App() {
               className="hidden md:block"
             />
             
-            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col flex-1 md:h-[700px] overflow-hidden relative">
+            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col h-[500px] md:h-[650px] overflow-hidden relative">
               {/* WhatsApp-style Background Pattern (Subtle) */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
               
