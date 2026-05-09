@@ -40,8 +40,8 @@ import {
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
 import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
-import { auth } from './firebase';
-import { db } from './services/firebaseConfig';
+import { auth, firebaseInitError } from './firebase';
+import { db, firebaseDbInitError } from './services/firebaseConfig';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -73,6 +73,30 @@ type Question = { id: string; user: string; text: string; time: string; replies:
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
 type Zone = ArinZone;
 
+const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
+  <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
+    <div className="w-full max-w-2xl bg-white rounded-[2.5rem] border border-sia-pink-light/40 shadow-xl p-8 md:p-12">
+      <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-6">
+        <AlertTriangle className="w-7 h-7" />
+      </div>
+      <h2 className="font-serif italic font-bold text-4xl text-sia-text mb-4">App Setup Needed</h2>
+      <p className="text-sia-text-muted mb-6">
+        SIA could not connect to Firebase, so authentication and community features cannot start yet.
+      </p>
+      <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm mb-6">
+        {message}
+      </div>
+      <div className="p-4 rounded-2xl bg-sia-cream/60 border border-sia-pink-light/30 text-sia-text text-sm leading-relaxed">
+        Add valid values for these keys in .env and restart the dev server:
+        <br />VITE_FIREBASE_API_KEY
+        <br />VITE_FIREBASE_AUTH_DOMAIN
+        <br />VITE_FIREBASE_PROJECT_ID
+        <br />VITE_FIREBASE_APP_ID
+      </div>
+    </div>
+  </div>
+);
+
 // --- Components ---
 const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitchToSignup: () => void }) => {
   const [email, setEmail] = useState('');
@@ -84,6 +108,11 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    if (!auth) {
+      setError('Firebase auth is not configured. Please check your .env Firebase keys.');
+      setIsLoading(false);
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, password);
       onLogin();
@@ -195,6 +224,11 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    if (!auth) {
+      setError('Firebase auth is not configured. Please check your .env Firebase keys.');
+      setIsLoading(false);
+      return;
+    }
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       onSignup();
@@ -1506,11 +1540,17 @@ const ManualZonePickerModal = ({
 
 
 export default function App() {
+  const firebaseSetupError = firebaseInitError || firebaseDbInitError;
   const [appState, setAppState] = useState<AppState | 'loading'>('loading');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
+    if (!auth) {
+      setUser(null);
+      setAppState('login');
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
@@ -1564,6 +1604,9 @@ export default function App() {
 
   // --- Firebase Real-time Sync ---
   useEffect(() => {
+    if (!db) {
+      return;
+    }
     console.log("🔥 [Firebase] Connecting to Project:", db.app.options.projectId);
     
     // Listen for questions
@@ -1702,6 +1745,11 @@ export default function App() {
   const handlePostQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuestion.trim()) return;
+    const activeDb = db;
+    if (!activeDb) {
+      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+      return;
+    }
     const qData = {
       user: 'Anonymous',
       text: newQuestion.trim(),
@@ -1712,7 +1760,7 @@ export default function App() {
     };
     
     try {
-      await addDoc(collection(db, "arin_questions"), qData);
+      await addDoc(collection(activeDb, "arin_questions"), qData);
       setNewQuestion('');
     } catch (err) {
       console.error("Firebase error posting question:", err);
@@ -1722,6 +1770,11 @@ export default function App() {
   const handlePostResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!responseInput.trim() || !selectedQuestion) return;
+    const activeDb = db;
+    if (!activeDb) {
+      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+      return;
+    }
     
     setIsVerifying(true);
     // Add a temporary local message to show it's "Verifying"
@@ -1745,11 +1798,12 @@ export default function App() {
       // Remove the temp message
       setArinResponses(prev => prev.filter(r => r.id !== tempResponseId));
 
-      if (moderation.verdict === 'REJECTED') {
-        alert("Your response could not be posted: " + (moderation.reason || "Guidelines violation."));
-        setIsVerifying(false);
-        return;
-      }
+    if (moderation.verdict !== 'APPROVED') {
+       alert("Your response could not be posted: " + (moderation.reason || "Please make the reply more helpful, safe, and specific."));
+       setIsVerifying(false);
+       return;
+}
+
 
       const resData = {
         question_id: selectedQuestion.id,
@@ -1762,10 +1816,10 @@ export default function App() {
         timestamp: Date.now()
       };
 
-      await addDoc(collection(db, "arin_responses"), resData);
+      await addDoc(collection(activeDb, "arin_responses"), resData);
       
       // Increment reply count
-      const qRef = doc(db, "arin_questions", selectedQuestion.id);
+      const qRef = doc(activeDb, "arin_questions", selectedQuestion.id);
       await updateDoc(qRef, {
         replies: increment(1)
       });
@@ -1808,6 +1862,10 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      if (!auth) {
+        setShowLogoutModal(false);
+        return;
+      }
       await signOut(auth);
       setShowLogoutModal(false);
     } catch (err) {
@@ -1821,6 +1879,10 @@ export default function App() {
         <Loader2 className="w-12 h-12 text-sia-pink animate-spin" />
       </div>
     );
+  }
+
+  if (firebaseSetupError) {
+    return <FirebaseSetupErrorPage message={firebaseSetupError} />;
   }
 
   if (appState === 'login') {
@@ -2052,6 +2114,10 @@ export default function App() {
                     setShowRespondModal(true);
                   }}
                   onHeartResponse={async (id) => {
+                    if (!db) {
+                      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
+                      return;
+                    }
                     // Optimistic update
                     setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
                     

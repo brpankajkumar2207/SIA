@@ -169,10 +169,14 @@ SAFETY CHECKS (any failure = REJECT):
 7. Does it promote self-harm or dangerous restriction behaviours?
 8. Does it spread medical misinformation that contradicts established safety guidelines?
 
-QUALITY CHECKS (failure = NEEDS_IMPROVEMENT, not rejection):
+QUALITY CHECKS:
 9. Is the response relevant to the question asked?
 10. Is it supportive and non-judgmental in tone?
 11. Is it at least one complete, meaningful sentence?
+
+If the response is safe but too vague, irrelevant, or too short, return NEEDS_IMPROVEMENT.
+Only return APPROVED when the response is safe, relevant, and useful enough to show publicly.
+
 
 Respond ONLY in this exact JSON format, no other text:
 {
@@ -191,7 +195,12 @@ Respond ONLY in this exact JSON format, no other text:
 
   try {
     // Aggressive timeout for moderation to keep UI fast
-    const rawResult = await callGroq(responseText, moderationPrompt, [], 4000);
+    const rawResult = await callGroq(
+  `Question: ${questionText}\n\nResponse to verify: ${responseText}`,
+  moderationPrompt,
+  []
+);
+
     const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Invalid AI response format');
     return JSON.parse(jsonMatch[0]);
