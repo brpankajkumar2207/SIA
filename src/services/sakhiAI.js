@@ -8,6 +8,8 @@ const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 // Vite uses import.meta.env.VITE_ prefixed variables
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const CAPSULE_GROQ_API_KEY = import.meta.env.VITE_CAPSULE_GROQ_API_KEY || GROQ_API_KEY;
+const CAPSULE_GEMINI_API_KEY = import.meta.env.VITE_CAPSULE_GEMINI_API_KEY || GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ── Timeout helper ────────────────────────────────────────────────────────────
@@ -50,13 +52,13 @@ function buildLocalRagReply(userMessage, chunks) {
 }
 
 // ── Groq API call ─────────────────────────────────────────────────────────────
-async function callGroq(userMessage, systemPrompt, history, timeoutMs = 8000) {
+async function callGroq(userMessage, systemPrompt, history, timeoutMs = 8000, apiKey = GROQ_API_KEY) {
   const response = await withTimeout(
     fetch(GROQ_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
@@ -82,10 +84,11 @@ async function callGroq(userMessage, systemPrompt, history, timeoutMs = 8000) {
 }
 
 // ── Gemini API call (fallback) ────────────────────────────────────────────────
-async function callGemini(userMessage, systemPrompt, history) {
+async function callGemini(userMessage, systemPrompt, history, apiKey = GEMINI_API_KEY) {
   const geminiHistory = convertHistoryForGemini(history);
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-  const response = await fetch(GEMINI_URL, {
+  const response = await fetch(geminiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -214,6 +217,68 @@ Respond ONLY in this exact JSON format, no other text:
     } catch (fallbackErr) {
       console.error('[Moderation] Critical Failure:', fallbackErr);
       return { verdict: 'REJECTED', reason: 'Moderation service unavailable', safe_summary: '', show_original: false };
+    }
+  }
+}
+export async function moderateTimeCapsuleNote(noteText, nearbyNotes = []) {
+  const comparisonText = nearbyNotes
+    .slice(0, 20)
+    .map((note, index) => `${index + 1}. [clusterKey: ${note.clusterKey}] ${note.text}`)
+    .join('\n');
+
+  const moderationPrompt = `
+You are a safety and grouping moderator for SIA Time Capsule, an anonymous women's campus/community help feature.
+
+A user submitted a note. Your job:
+1. Verify the note is safe, useful, respectful, and relevant to women's safety, menstrual wellness, comfort, campus help, supplies, washroom updates, nearby support, or practical local care.
+2. Reject personal attacks, explicit content, harassment, misinformation, dangerous medical advice, private contact details, exact personal identity info, spam, or irrelevant text.
+3. Compare it with nearby approved notes.
+4. If it says the same or very similar thing as an existing nearby note, reuse that note's clusterKey.
+5. If it is a new useful note, create a short lowercase clusterKey using hyphens.
+
+NEARBY APPROVED NOTES:
+${comparisonText || 'None'}
+
+Return ONLY valid JSON:
+{
+  "verdict": "APPROVED" | "REJECTED" | "NEEDS_IMPROVEMENT",
+  "reason": "brief reason if not approved",
+  "safe_summary": "warm public-facing version of the note",
+  "clusterKey": "existing-or-new-cluster-key",
+  "category": "short category name"
+}
+`;
+
+  if (!CAPSULE_GROQ_API_KEY && !CAPSULE_GEMINI_API_KEY) {
+    return {
+      verdict: 'REJECTED',
+      reason: 'Safety verification is offline.',
+      safe_summary: '',
+      clusterKey: '',
+      category: ''
+    };
+  }
+
+  try {
+    const rawResult = await callGroq(noteText, moderationPrompt, [], 8000, CAPSULE_GROQ_API_KEY);
+    const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Invalid AI response format');
+    return JSON.parse(jsonMatch[0]);
+  } catch (err) {
+    try {
+      const rawResult = await callGemini(noteText, moderationPrompt, [], CAPSULE_GEMINI_API_KEY);
+      const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Invalid AI response format');
+      return JSON.parse(jsonMatch[0]);
+    } catch (fallbackErr) {
+      console.error('[Time Capsule Moderation] Failed:', fallbackErr);
+      return {
+        verdict: 'REJECTED',
+        reason: 'Moderation service unavailable.',
+        safe_summary: '',
+        clusterKey: '',
+        category: ''
+      };
     }
   }
 }

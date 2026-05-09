@@ -38,30 +38,33 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-import { getZoneWithCache, Zone as ArinZone } from './services/arinLocationService';
+import { askSakhiKnows, moderateArinResponse, moderateTimeCapsuleNote } from './services/sakhiAI';
+import { getZoneWithCache, getDistanceKm, Zone as ArinZone } from './services/arinLocationService';
 import { auth, firebaseInitError } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
+import { capsuleDb, capsuleFirebaseInitError } from './services/capsuleFirebaseConfig';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  onSnapshot, 
-  orderBy, 
-  doc, 
-  updateDoc, 
+  FirebaseUser as FirebaseUser
+} from './services/devFirebaseWrapper.ts';
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  doc,
+  updateDoc,
   increment,
   setDoc,
-  getDocs
-} from "firebase/firestore";
+  getDocs,
+  runTransaction
+} from "./services/devDbWrapper";
+
 
 
 
@@ -71,8 +74,25 @@ type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
 type Question = { id: string; user: string; text: string; time: string; replies: number; zone_id: string; city?: string; timestamp: number };
-type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; likes: number };
+type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; thumbsUp: number; thumbsDown: number; votes?: Record<string, CapsuleVote> };
 type Zone = ArinZone;
+type CapsuleVote = 'up' | 'down';
+
+type TimeCapsuleNote = {
+  id: string;
+  text: string;
+  originalText: string;
+  category: string;
+  clusterKey: string;
+  userId: string;
+  lat: number;
+  lng: number;
+  timestamp: number;
+  thumbsUp: number;
+  thumbsDown: number;
+  votes?: Record<string, CapsuleVote>;
+  status: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT';
+};
 
 const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
   <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6">
@@ -779,7 +799,7 @@ const ChatSummary = ({
         const snapshot = await getDocs(q);
         const nearby: string[] = [];
         
-        snapshot.forEach(doc => {
+        snapshot.forEach((doc: any) => {
           if (doc.id === user.uid) return;
           const data = doc.data();
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
@@ -1071,75 +1091,91 @@ const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: b
 );
 
 
-const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
-  const insights = [
-    { icon: Sparkles, text: "Most women nearby mention that the library washroom usually has emergency pads.", color: "text-sia-pink" },
-    { icon: AlertTriangle, text: "Several women reported that the mess-side washroom bins are currently broken.", color: "text-amber-500" },
-    { icon: Droplets, text: "Many women nearby recommend warm jeera water and rest during cramps.", color: "text-blue-500" },
-    { icon: Shield, text: "Hostel Block A is considered one of the safest support zones nearby.", color: "text-green-600" }
-  ];
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
-      className={`${compact ? 'mb-8 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem]' : 'mb-12 md:mb-20 p-6 md:p-14 rounded-[2.5rem] md:rounded-[3.5rem]'} bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_30px_100px_rgba(216,27,96,0.08)] relative overflow-hidden group w-full`}
-    >
-      <div className="absolute top-0 right-0 p-12 opacity-[0.03] scale-150 group-hover:rotate-12 transition-transform duration-1000">
-        <Brain className={`${compact ? 'w-32 h-32' : 'w-64 h-64'} text-sia-pink`} />
-      </div>
 
-      <div className="relative z-10">
-        <div className={`flex items-center gap-4 ${compact ? 'mb-6 text-left' : 'mb-10'}`}>
-          <div className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} rounded-[1.2rem] bg-gradient-to-tr from-sia-pink to-sia-peach flex items-center justify-center shadow-[0_10px_30px_rgba(216,27,96,0.3)]`}>
-            <Sparkles className={`${compact ? 'w-5 h-5' : 'w-7 h-7'} text-white animate-pulse`} />
-          </div>
-          <div className="text-left">
-            <h3 className={`font-serif italic font-bold text-sia-text ${compact ? 'text-lg md:text-xl' : 'text-2xl md:text-3xl'}`}>Nearby Wisdom Summary ✨</h3>
-            <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-40">AI-Powered Anonymous Insight</p>
-          </div>
-        </div>
 
-        <div className={`grid grid-cols-1 ${compact ? 'md:grid-cols-2 gap-4' : 'md:grid-cols-2 gap-8'}`}>
-          {(compact ? insights.slice(0, 2) : insights).map((item, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ x: 5 }}
-              className={`flex items-start gap-4 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] bg-white/40 border border-white/60 shadow-sm text-left`}
-            >
-              <item.icon className={`w-5 h-5 ${item.color} shrink-0 mt-1 opacity-60`} />
-              <p className={`${compact ? 'text-xs' : 'text-base'} leading-relaxed text-sia-text font-light`}>“{item.text}”</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
+const formatTimeAgo = (timestamp: number) => {
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
+
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 };
 
-
-const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: any) => (
-
+const CapsuleCard = ({
+  icon: Icon,
+  text,
+  time,
+  category,
+  clusterCount,
+  thumbsUp,
+  thumbsDown,
+  userVote,
+  onVote
+}: any) => (
   <motion.div
     whileHover={{ y: -8, scale: 1.02 }}
     className="p-6 md:p-8 rounded-[2.5rem] md:rounded-[2.8rem] bg-white/60 backdrop-blur-xl border border-sia-pink-light shadow-sm hover:shadow-[0_20px_50px_rgba(216,27,96,0.1)] transition-all relative group"
   >
     <div className="absolute inset-0 bg-gradient-to-br from-sia-pink/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.8rem]" />
+
     <div className="flex items-start gap-5 relative z-10">
       <div className="w-14 h-14 rounded-2xl bg-sia-pink-light flex items-center justify-center shrink-0 shadow-inner group-hover:bg-sia-pink group-hover:text-white transition-colors duration-500">
         <Icon className="w-6 h-6 text-sia-pink group-hover:text-white transition-colors" />
       </div>
+
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-sia-pink opacity-50">Anonymous Sister</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-sia-pink opacity-50">
+            Anonymous Sister
+          </span>
           <span className="w-1 h-1 bg-sia-pink/20 rounded-full" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-sia-text/30">{time}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-sia-text/30">
+            {time}
+          </span>
         </div>
-        <p className="text-base text-sia-text leading-relaxed mb-4 font-serif italic">“{text}”</p>
+
+        <p className="text-base text-sia-text leading-relaxed mb-5 font-serif italic">
+          “{text}”
+        </p>
+
+        <div className="pt-4 border-t border-sia-pink-light/40">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text-muted mb-3">
+            Mark 👍 - True &nbsp; 👎 - False
+          </p>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onVote('up')}
+              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
+                userVote === 'up'
+                  ? 'bg-green-50 border-green-300 text-green-700'
+                  : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
+              }`}
+            >
+              👍 {thumbsUp}
+            </button>
+
+            <button
+              onClick={() => onVote('down')}
+              className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
+                userVote === 'down'
+                  ? 'bg-red-50 border-red-300 text-red-700'
+                  : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
+              }`}
+            >
+              👎 {thumbsDown}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+
     {clusterCount > 0 && (
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -1147,27 +1183,194 @@ const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: a
         className="absolute -top-3 -right-3 px-4 py-2 bg-white border border-sia-pink-light text-sia-pink text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-2"
       >
         <div className="w-2 h-2 bg-sia-pink rounded-full animate-ping" />
-        {clusterCount} women shared similar
+        {clusterCount} {clusterCount === 1 ? 'woman' : 'women'} shared similar
       </motion.div>
     )}
+
+    <div className="mt-5 text-[9px] font-black uppercase tracking-widest text-sia-pink/40">
+      {category}
+    </div>
   </motion.div>
 );
 
-const TimeCapsulePage = () => {
+const TimeCapsulePage = ({
+  currentZone,
+  user
+}: {
+  currentZone: Zone;
+  user: FirebaseUser | null;
+}) => {
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [note, setNote] = useState('');
+  const [capsules, setCapsules] = useState<TimeCapsuleNote[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const activeDb = capsuleDb || db;
 
-  const capsules = [
-    { icon: Sparkles, text: "The library washroom usually has emergency pads in the third stall.", zone: "Library", time: "2h ago", category: "Pads Availability", clusterCount: 12 },
-    { icon: AlertTriangle, text: "Bins near the mess are broken today, please use the ones near the entrance.", zone: "Hostel Block A", time: "1h ago", category: "Washroom Update", clusterCount: 0 },
-    { icon: Coffee, text: "The canteen aunty gives hot ginger water if you mention you're unwell.", zone: "Cafeteria", time: "3h ago", category: "Hostel Hack", clusterCount: 5 },
-    { icon: Clock, text: "The pharmacy near Gate 2 stays open till 11pm even on Sundays.", zone: "Campus Area", time: "5h ago", category: "Nearby Help", clusterCount: 0 },
-    { icon: HeartHandshake, text: "Try the bean bags in the library reading room if your back hurts.", zone: "Library", time: "30m ago", category: "Comfort", clusterCount: 8 },
-  ];
+  useEffect(() => {
+    if (!activeDb) return;
+
+    const unsubscribe = onSnapshot(collection(activeDb, "time_capsules"), (snapshot) => {
+      const notes: TimeCapsuleNote[] = [];
+      snapshot.forEach((docSnap: any) => {
+        notes.push({ id: docSnap.id, ...docSnap.data() } as TimeCapsuleNote);
+      });
+      setCapsules(
+        notes
+          .filter((note) => note.status === 'APPROVED')
+          .sort((a, b) => b.timestamp - a.timestamp)
+      );
+    }, (error) => {
+      console.error('Failed to load capsules:', error);
+    });
+
+    return () => unsubscribe();
+  }, [activeDb]);
+
+  const nearbyCapsules = capsules.filter((capsule) => {
+    if (!currentZone?.center?.lat || !currentZone?.center?.lng) return false;
+
+    const distanceKm = getDistanceKm(
+      currentZone.center.lat,
+      currentZone.center.lng,
+      capsule.lat,
+      capsule.lng
+    );
+
+    return distanceKm <= 0.3;
+  });
+
+  const groupedCapsules = Object.values(
+    nearbyCapsules.reduce((groups, capsule) => {
+      const existing = groups[capsule.clusterKey];
+
+      if (!existing) {
+        groups[capsule.clusterKey] = {
+          representative: capsule,
+          count: 1,
+          thumbsUp: capsule.thumbsUp || 0,
+          thumbsDown: capsule.thumbsDown || 0
+        };
+        return groups;
+      }
+
+      existing.count += 1;
+      existing.thumbsUp += capsule.thumbsUp || 0;
+      existing.thumbsDown += capsule.thumbsDown || 0;
+
+      if (capsule.timestamp > existing.representative.timestamp) {
+        existing.representative = capsule;
+      }
+
+      return groups;
+    }, {} as Record<string, {
+      representative: TimeCapsuleNote;
+      count: number;
+      thumbsUp: number;
+      thumbsDown: number;
+    }>)
+  ).sort((a, b) => b.representative.timestamp - a.representative.timestamp);
+
+  const handleSubmitCapsule = async () => {
+    if (!note.trim()) return;
+
+    if (!activeDb || !user) {
+      alert('Please log in before posting a capsule.');
+      return;
+    }
+
+    if (!currentZone?.center?.lat || !currentZone?.center?.lng) {
+      alert('Location is still being detected. Please try again in a moment.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const nearbyForAi = nearbyCapsules.map((capsule) => ({
+        text: capsule.text,
+        clusterKey: capsule.clusterKey
+      }));
+
+      const moderation = await moderateTimeCapsuleNote(note, nearbyForAi);
+
+      if (moderation.verdict !== 'APPROVED') {
+        alert(moderation.reason || 'This note needs changes before it can be posted.');
+        return;
+      }
+
+      await addDoc(collection(activeDb, "time_capsules"), {
+        originalText: note.trim(),
+        text: moderation.safe_summary || note.trim(),
+        category: moderation.category || 'Community Wisdom',
+        clusterKey: moderation.clusterKey || `capsule-${Date.now()}`,
+        userId: user.uid,
+        lat: currentZone.center.lat,
+        lng: currentZone.center.lng,
+        timestamp: Date.now(),
+        thumbsUp: 0,
+        thumbsDown: 0,
+        votes: {},
+        status: 'APPROVED'
+      });
+
+      setNote('');
+      setShowWriteModal(false);
+    } catch (error) {
+      console.error('Failed to post time capsule:', error);
+      alert('Could not post this capsule right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVoteCapsule = async (capsule: TimeCapsuleNote, vote: CapsuleVote) => {
+    if (!activeDb || !user) return;
+
+    const capsuleRef = doc(activeDb, "time_capsules", capsule.id);
+
+    try {
+      await runTransaction(activeDb, async (transaction) => {
+        const snap = await transaction.get(capsuleRef);
+        if (!snap.exists()) return;
+
+        const data = snap.data() as TimeCapsuleNote;
+        const votes = data.votes || {};
+        const previousVote = votes[user.uid];
+
+        if (previousVote === vote) return;
+
+        let thumbsUp = data.thumbsUp || 0;
+        let thumbsDown = data.thumbsDown || 0;
+
+        if (previousVote === 'up') thumbsUp -= 1;
+        if (previousVote === 'down') thumbsDown -= 1;
+
+        if (vote === 'up') thumbsUp += 1;
+        if (vote === 'down') thumbsDown += 1;
+
+        if (thumbsDown > 3) {
+          transaction.update(capsuleRef, {
+            status: 'REJECTED',
+            thumbsUp,
+            thumbsDown,
+            [`votes.${user.uid}`]: vote
+          });
+          return;
+        }
+
+        transaction.update(capsuleRef, {
+          thumbsUp,
+          thumbsDown,
+          [`votes.${user.uid}`]: vote
+        });
+      });
+    } catch (error) {
+      console.error('Failed to vote on capsule:', error);
+    }
+  };
 
   return (
     <div className="pt-32 px-6 max-w-5xl mx-auto pb-40 relative">
-      {/* Background Floating Particles */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {[...Array(12)].map((_, i) => (
           <motion.div
@@ -1196,10 +1399,9 @@ const TimeCapsulePage = () => {
       <div className="relative z-10">
         <SectionHeading
           title="Time Capsule 💗"
-          subtitle="Anonymous wisdom, comfort, and survival notes left by women nearby."
+          subtitle="Anonymous wisdom, comfort, and survival notes left by women within 300 meters."
         />
 
-        {/* Static Write Button */}
         <div className="flex justify-center mb-16">
           <motion.button
             whileHover={{ scale: 1.05, y: -5 }}
@@ -1208,54 +1410,43 @@ const TimeCapsulePage = () => {
             className="w-full max-w-xl px-6 md:px-10 py-4 md:py-6 rounded-full bg-sia-pink text-white font-bold shadow-[0_20px_50px_rgba(216,27,96,0.3)] flex items-center justify-center gap-4 group overflow-hidden relative"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-sia-peach/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-            <span className="uppercase tracking-[0.2em] text-[10px] relative z-10">Leave A Note For Future Women</span>
+            <span className="uppercase tracking-[0.2em] text-[10px] relative z-10">
+              Leave A Note
+            </span>
             <Heart className="w-5 h-5 fill-white group-hover:animate-bounce relative z-10" />
           </motion.button>
         </div>
 
-        {/* AI Summary Section */}
-        <WisdomSummary />
+       
 
-        {/* Community Feed */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
-          {capsules.map((cap, i) => (
-            <CapsuleCard key={i} {...cap} />
-          ))}
+          {groupedCapsules.length === 0 && (
+            <div className="md:col-span-2 p-14 rounded-[3rem] border border-dashed border-sia-pink-light/50 bg-white/40 text-center">
+              <p className="font-serif italic text-2xl text-sia-text opacity-40">
+                No capsules nearby yet. You can be the first within this 300m circle.
+              </p>
+            </div>
+          )}
+
+          {groupedCapsules.map((group) => {
+            const cap = group.representative;
+            return (
+              <CapsuleCard
+                key={cap.clusterKey}
+                icon={HeartHandshake}
+                text={cap.text}
+                time={formatTimeAgo(cap.timestamp)}
+                category={cap.category}
+                clusterCount={group.count}
+                thumbsUp={group.thumbsUp}
+                thumbsDown={group.thumbsDown}
+                userVote={cap.votes?.[user?.uid || '']}
+                onVote={(vote: CapsuleVote) => handleVoteCapsule(cap, vote)}
+              />
+            );
+          })}
         </div>
 
-        {/* Most Shared Insights */}
-        <div className="mb-24">
-          <div className="flex flex-col items-center mb-12">
-            <div className="h-px w-20 bg-sia-pink-light mb-6" />
-            <h3 className="text-xs font-bold uppercase tracking-[0.4em] text-sia-pink opacity-40 text-center">Most Shared Nearby Insights ✨</h3>
-          </div>
-
-          <div className="space-y-6">
-            {[
-              { text: "Emergency pads are most commonly found near library washrooms.", icon: Sparkles, count: "85% verification" },
-              { text: "Washroom maintenance issues are currently trending near the cafeteria zone.", icon: AlertTriangle, count: "Trending" },
-              { text: "Heat therapy and hydration are the most suggested cramps remedies nearby.", icon: Droplets, count: "Community Choice" }
-            ].map((insight, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.01 }}
-                className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-sia-warm-bg border border-sia-pink-light/50 group cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                  <insight.icon className="w-5 h-5 text-sia-pink" />
-                </div>
-                <p className="text-lg font-serif italic text-sia-text flex-1">“{insight.text}”</p>
-                <div className="px-5 py-2 rounded-full bg-white text-[9px] font-black text-sia-pink uppercase tracking-widest border border-sia-pink-light shadow-sm">
-                  {insight.count}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-
-
-        {/* Write Modal */}
         <AnimatePresence>
           {showWriteModal && (
             <motion.div
@@ -1274,18 +1465,27 @@ const TimeCapsulePage = () => {
               >
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
 
-                <button onClick={() => setShowWriteModal(false)} className="absolute top-6 right-6 md:top-10 md:right-10 p-2 md:p-3 rounded-full hover:bg-sia-pink-light/30 text-sia-text/40 hover:text-sia-pink transition-all z-[110]">
+                <button
+                  onClick={() => setShowWriteModal(false)}
+                  className="absolute top-6 right-6 md:top-10 md:right-10 p-2 md:p-3 rounded-full hover:bg-sia-pink-light/30 text-sia-text/40 hover:text-sia-pink transition-all z-[110]"
+                >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
 
                 <div className="mb-10">
-                  <h3 className="font-serif italic font-bold text-3xl md:text-4xl mb-3 text-sia-text pr-12">Leave a Kindness 💗</h3>
-                  <p className="text-sia-text-muted text-sm md:text-base font-light italic">“Women quietly leaving care, comfort, and wisdom for those who follow.”</p>
+                  <h3 className="font-serif italic font-bold text-3xl md:text-4xl mb-3 text-sia-text pr-12">
+                    Leave a Kindness 💗
+                  </h3>
+                  <p className="text-sia-text-muted text-sm md:text-base font-light italic">
+                    “Women quietly leaving care, comfort, and wisdom for those who follow.”
+                  </p>
                 </div>
 
                 <div className="space-y-8">
                   <div className="relative">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-50 ml-6 mb-3 block">Your Wisdom</label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink opacity-50 ml-6 mb-3 block">
+                      Your Wisdom
+                    </label>
                     <textarea
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
@@ -1294,18 +1494,13 @@ const TimeCapsulePage = () => {
                     />
                   </div>
 
-
-
                   <button
-                    onClick={() => {
-                      setShowWriteModal(false);
-                      setNote('');
-                    }}
-                    className="w-full h-20 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.3em] text-xs shadow-[0_15px_40px_rgba(216,27,96,0.3)] hover:bg-sia-pink-dark transition-all mt-6 active:scale-95"
+                    onClick={handleSubmitCapsule}
+                    disabled={isSubmitting}
+                    className="w-full h-20 rounded-full bg-sia-pink text-white font-bold uppercase tracking-[0.3em] text-xs shadow-[0_15px_40px_rgba(216,27,96,0.3)] hover:bg-sia-pink-dark transition-all mt-6 active:scale-95 disabled:opacity-60"
                   >
-                    Seal in Capsule 💗
+                    {isSubmitting ? 'Verifying With AI...' : 'Seal in Capsule 💗'}
                   </button>
-
                 </div>
               </motion.div>
             </motion.div>
@@ -1316,6 +1511,7 @@ const TimeCapsulePage = () => {
   );
 };
 
+
 // Arin Page - Community Forum
 // Arin Page - Community Forum
 const ArinCommunityPage = ({
@@ -1324,18 +1520,22 @@ const ArinCommunityPage = ({
   setNewQuestion,
   handlePostQuestion,
   onRespond,
-  onHeartResponse,
+  onVoteResponse,
   currentZone,
-  responses
+  responses,
+  user
+
 }: {
   questions: Question[],
   newQuestion: string,
   setNewQuestion: (v: string) => void,
   handlePostQuestion: (e: React.FormEvent) => void,
   onRespond: (q: Question) => void,
-  onHeartResponse: (id: string) => void,
+  onVoteResponse: (response: ArinResponse, vote: CapsuleVote) => void,
   currentZone: Zone,
-  responses: ArinResponse[]
+  responses: ArinResponse[],
+user: FirebaseUser | null
+
 }) => (
   <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
     <div className="text-center mb-12 md:mb-16">
@@ -1423,15 +1623,30 @@ const ArinCommunityPage = ({
                     <p className="text-sm text-sia-text font-light leading-relaxed">
                       {r.show_original ? r.text : r.safe_summary}
                     </p>
-                    <div className="mt-3 flex items-center justify-end">
-                      <button
-                        onClick={() => onHeartResponse(r.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-sia-pink-light/30 hover:border-sia-pink/50 transition-all active:scale-90"
-                      >
-                        <Heart className={`w-3 h-3 ${r.likes > 0 ? 'fill-sia-pink text-sia-pink' : 'text-sia-pink/40'}`} />
-                        <span className="text-[10px] font-bold text-sia-pink">{r.likes || 0}</span>
-                      </button>
-                    </div>
+                    <div className="mt-3 flex items-center justify-end gap-3">
+  <button
+    onClick={() => onVoteResponse(r, 'up')}
+    className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
+      r.votes?.[user?.uid || ''] === 'up'
+        ? 'bg-green-50 border-green-300 text-green-700'
+        : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-green-700'
+    }`}
+  >
+    👍 {r.thumbsUp || 0}
+  </button>
+
+  <button
+    onClick={() => onVoteResponse(r, 'down')}
+    className={`px-4 py-2 rounded-full border text-xs font-bold transition-all ${
+      r.votes?.[user?.uid || ''] === 'down'
+        ? 'bg-red-50 border-red-300 text-red-700'
+        : 'bg-white border-sia-pink-light text-sia-text-muted hover:text-red-700'
+    }`}
+  >
+    👎 {r.thumbsDown || 0}
+  </button>
+</div>
+
                   </>
                 ) : (
                   <div className="flex items-center gap-3 py-2">
@@ -1590,7 +1805,7 @@ export default function App() {
       setAppState('login');
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         setUser(firebaseUser);
         setAppState('idle');
@@ -1658,7 +1873,7 @@ export default function App() {
       const source = snapshot.metadata.fromCache ? "Local Cache" : "Live Server";
       console.log(`📨 [Firebase] Received ${snapshot.size} Questions from ${source}`);
       const qs: Question[] = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         qs.push({ id: doc.id, ...data } as Question);
       });
@@ -1673,7 +1888,7 @@ export default function App() {
     const unsubscribeResponses = onSnapshot(rQuery, (snapshot) => {
       console.log("📨 Received Responses Update:", snapshot.size);
       const rs: ArinResponse[] = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         rs.push({ id: doc.id, ...doc.data() } as ArinResponse);
       });
       setArinResponses(rs);
@@ -1845,7 +2060,10 @@ export default function App() {
       verdict: 'APPROVED',
       safe_summary: '',
       show_original: true,
-      likes: 0,
+      thumbsUp: 0,
+      thumbsDown: 0,
+      votes: {},
+
       timestamp: Date.now()
     };
     setArinResponses(prev => [...prev, tempResponse]);
@@ -1870,7 +2088,10 @@ export default function App() {
         verdict: moderation.verdict,
         safe_summary: moderation.safe_summary || '',
         show_original: moderation.show_original ?? true,
-        likes: 0,
+        thumbsUp: 0,
+        thumbsDown: 0,
+        votes: {},
+
         timestamp: Date.now()
       };
 
@@ -2173,21 +2394,46 @@ export default function App() {
                     setSelectedQuestion(q);
                     setShowRespondModal(true);
                   }}
-                  onHeartResponse={async (id) => {
-                    if (!db) {
-                      alert('Firebase is not configured yet. Please add Firebase keys in .env.');
-                      return;
-                    }
-                    // Optimistic update
-                    setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
-                    
-                    const rRef = doc(db, "arin_responses", id);
-                    await updateDoc(rRef, {
-                      likes: increment(1)
-                    });
-                  }}
+                  onVoteResponse={async (response, vote) => {
+  if (!db || !user) return;
+
+  const responseRef = doc(db, "arin_responses", response.id);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(responseRef);
+      if (!snap.exists()) return;
+
+      const data = snap.data() as ArinResponse;
+      const votes = data.votes || {};
+      const previousVote = votes[user.uid];
+
+      if (previousVote === vote) return;
+
+      let thumbsUp = data.thumbsUp || 0;
+      let thumbsDown = data.thumbsDown || 0;
+
+      if (previousVote === 'up') thumbsUp -= 1;
+      if (previousVote === 'down') thumbsDown -= 1;
+
+      if (vote === 'up') thumbsUp += 1;
+      if (vote === 'down') thumbsDown += 1;
+
+      transaction.update(responseRef, {
+        thumbsUp,
+        thumbsDown,
+        [`votes.${user.uid}`]: vote
+      });
+    });
+  } catch (error) {
+    console.error('Failed to vote on ARIN response:', error);
+  }
+}}
+
                   currentZone={currentZone}
                   responses={arinResponses}
+                  user={user}
+
                 />
               </motion.div>
             )}
@@ -2199,7 +2445,8 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <TimeCapsulePage />
+                <TimeCapsulePage currentZone={currentZone} user={user} />
+
               </motion.div>
             )}
 
