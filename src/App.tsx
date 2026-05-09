@@ -38,7 +38,8 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse, moderateTimeCapsuleNote } from './services/sakhiAI';
 import { getZoneWithCache, getDistanceKm, Zone as ArinZone } from './services/arinLocationService';
@@ -137,6 +138,7 @@ const FirebaseSetupErrorPage = ({ message }: { message: string }) => (
 const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitchToSignup: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -238,13 +240,20 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
                   <Shield className="w-5 h-5" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 text-sia-pink/40 hover:text-sia-pink transition-colors z-10"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
@@ -276,6 +285,7 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
 const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwitchToLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -377,13 +387,20 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
                   <Shield className="w-5 h-5" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Create a password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-14 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 text-sia-pink/40 hover:text-sia-pink transition-colors z-10"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
@@ -487,20 +504,22 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
   const [isEditing, setIsEditing] = useState(false);
   const [userName, setUserName] = useState('Anonymous Sister');
   const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('+91 98765 43210');
+  const [institution, setInstitution] = useState('Indian Institute of Science (IISc)');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
       setUserEmail(user.email || 'anonymous@sia.com');
-      // Fetch name from Firestore if it exists
       if (db) {
-        const userRef = doc(db, "users", user.uid);
         getDocs(query(collection(db, "users"), where("__name__", "==", user.uid))).then(snap => {
           if (snap.size > 0) {
             const data = snap.docs[0].data();
             if (data.name) setUserName(data.name);
+            if (data.phone) setUserPhone(data.phone);
+            if (data.institution) setInstitution(data.institution);
             else if (user.displayName) setUserName(user.displayName);
-            else setUserName(user.email?.split('@')[0] || 'Anonymous Sister');
+            else if (!data.name) setUserName(user.email?.split('@')[0] || 'Anonymous Sister');
           }
         });
       }
@@ -512,7 +531,9 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
     setSaving(true);
     try {
       await setDoc(doc(db, "users", user.uid), {
-        name: userName
+        name: userName,
+        phone: userPhone,
+        institution: institution
       }, { merge: true });
       setIsEditing(false);
     } catch (e) {
@@ -538,16 +559,31 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
           </div>
         </div>
 
-        <div className="flex-1 text-center md:text-left space-y-4 z-10">
-          <div>
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
+        <div className="flex-1 text-center md:text-left space-y-6 z-10">
+          <div className="space-y-4">
+            <div className="flex items-center justify-center md:justify-start gap-4">
               {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink"
-                  />
+                <input
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Your Name"
+                  className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink w-full max-w-xs"
+                />
+              ) : (
+                <h2 className="font-serif italic font-bold text-4xl text-sia-text">{userName}</h2>
+              )}
+              
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-[10px] font-bold uppercase tracking-widest text-sia-pink bg-sia-pink-light/30 px-4 py-2 rounded-full hover:bg-sia-pink hover:text-white transition-all shadow-sm"
+                >
+                  Edit Profile
+                </button>
+              )}
+
+              {isEditing && (
+                <div className="flex gap-2">
                   <button
                     onClick={handleSave}
                     disabled={saving}
@@ -562,21 +598,46 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-              ) : (
-                <>
-                  <h2 className="font-serif italic font-bold text-4xl text-sia-text">{userName}</h2>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="p-2 hover:bg-sia-pink-light rounded-full transition-colors opacity-40 hover:opacity-100"
-                  >
-                    <Settings className="w-4 h-4 text-sia-pink" />
-                  </button>
-                </>
               )}
             </div>
-            <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <Shield className="w-4 h-4 text-sia-pink/40" />
+                {isEditing ? (
+                  <input
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                    placeholder="Institution"
+                    className="bg-white/60 border border-sia-pink-light/30 rounded-lg px-3 py-1 text-sm text-sia-text-muted focus:outline-none focus:ring-1 focus:ring-sia-pink w-full max-w-xs"
+                  />
+                ) : (
+                  <span className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">{institution}</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <MessageCircle className="w-4 h-4 text-sia-pink/40" />
+                <span className="text-sia-text-muted font-light text-sm">{userEmail}</span>
+              </div>
+
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <AlertCircle className="w-4 h-4 text-sia-pink/40" />
+                {isEditing ? (
+                  <input
+                    value={userPhone}
+                    onChange={(e) => setUserPhone(e.target.value)}
+                    placeholder="Phone Number"
+                    className="bg-white/60 border border-sia-pink-light/30 rounded-lg px-3 py-1 text-sm text-sia-text-muted focus:outline-none focus:ring-1 focus:ring-sia-pink w-full max-w-xs"
+                  />
+                ) : (
+                  <span className="text-sia-text-muted font-light text-sm">{userPhone}</span>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
+          
+          <p className="text-sia-text-muted font-light text-lg italic">"Helping others find comfort and safety."</p>
         </div>
       </div>
     </div>
@@ -606,6 +667,7 @@ const SettingsPage = () => {
       title: "Help & Support",
       items: [
         { id: 'reportIssue', icon: AlertCircle, label: 'Report an issue', desc: 'Let us know if something isn\'t working correctly', type: 'button' },
+        { id: 'changePassword', icon: Lock, label: 'Change Password', desc: 'Update your account security credentials', type: 'button' },
       ]
     }
   ];
