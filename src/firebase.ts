@@ -42,6 +42,18 @@ if (!firebaseInitError) {
             console.warn("Firestore Persistence: The current browser does not support all of the features required to enable persistence.");
         }
     });
+
+    // Register Service Worker for Messaging with Dynamic Config
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      const configParams = new URLSearchParams(firebaseConfig as any).toString();
+      navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
+        .then((registration) => {
+          console.log('Messaging Service Worker registered with scope:', registration.scope);
+        })
+        .catch((err) => {
+          console.error('Messaging Service Worker registration failed:', err);
+        });
+    }
   } catch (error) {
     console.error("Firebase initialization failed:", error);
   }
