@@ -435,6 +435,11 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
             <span className="px-4 py-2 rounded-full bg-white/60 text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light">
               {currentZone ? currentZone.display_name : 'Detecting Location...'}
             </span>
+            {currentZone && (
+              <span className="px-4 py-2 rounded-full bg-sia-cream text-sia-text-muted text-[10px] font-bold uppercase tracking-widest border border-sia-pink-light/30">
+                {currentZone.center.lat.toFixed(4)}°N, {currentZone.center.lng.toFixed(4)}°E
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -98,62 +98,68 @@ export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        const zone = detectZoneLocal(latitude, longitude);
+        console.log(`📍 Raw Coordinates: ${latitude}, ${longitude}`);
         
-        if (zone) {
-          let preciseZone = { ...zone };
-          
-          try {
-            // Reverse geocode to get a more precise local area name
-            // Nominatim requires a User-Agent header or it may block the request
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`, {
-              headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'SIA-Wellness-App'
-              }
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              console.log("📍 Precise Location Data:", data);
-              
-              if (data && data.address) {
-                const addr = data.address;
-                // Highly granular list of potential local area identifiers
-                const localArea = addr.neighbourhood || addr.suburb || addr.subdivision || 
-                                 addr.residential || addr.industrial || addr.village || 
-                                 addr.hamlet || addr.allotments || addr.croft || '';
-                                 
-                const cityArea = addr.city || addr.town || addr.municipality || 
-                                addr.city_district || addr.district || addr.county || '';
-                
-                let preciseName = "";
-                
-                if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
-                  preciseName = `${localArea}, ${cityArea}`;
-                } else {
-                  preciseName = localArea || cityArea || zone.display_name;
-                }
-                
-                // Final formatting: capitalize and trim
-                preciseZone.display_name = preciseName.trim().toUpperCase();
-              }
-            } else {
-              console.warn("📍 Geocoding API returned status:", response.status);
-            }
-          } catch (e) {
-            console.error("📍 Reverse geocoding failed:", e);
-          }
+        let detectedZone = detectZoneLocal(latitude, longitude);
+        let displayZone: Zone;
 
-          sessionStorage.setItem('arin_zone', JSON.stringify(preciseZone));
-          sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
-          resolve(preciseZone);
+        if (detectedZone) {
+          displayZone = { ...detectedZone };
         } else {
-          onManualPicker();
-          resolve(null);
+          // Create a dynamic placeholder zone if not in a predefined region
+          displayZone = {
+            id: `dynamic_${Date.now()}`,
+            name: "Detected Location",
+            type: "city",
+            display_name: "DETECTING...",
+            center: { lat: latitude, lng: longitude },
+            radius_km: 10
+          };
         }
+
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'SIA-Wellness-App'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log("📍 Reverse Geocoding Result:", data);
+            
+            if (data && data.address) {
+              const addr = data.address;
+              const localArea = addr.neighbourhood || addr.suburb || addr.subdivision || 
+                               addr.residential || addr.industrial || addr.village || 
+                               addr.hamlet || addr.allotments || addr.croft || '';
+                               
+              const cityArea = addr.city || addr.town || addr.municipality || 
+                              addr.city_district || addr.district || addr.county || '';
+              
+              let preciseName = "";
+              if (localArea && cityArea && localArea.toLowerCase() !== cityArea.toLowerCase()) {
+                preciseName = `${localArea}, ${cityArea}`;
+              } else {
+                preciseName = localArea || cityArea || (detectedZone ? detectedZone.display_name : "UNKNOWN LOCATION");
+              }
+              
+              displayZone.display_name = preciseName.trim().toUpperCase();
+            }
+          }
+        } catch (e) {
+          console.error("📍 Reverse geocoding failed:", e);
+          // Fallback to broad city name if we detected one, otherwise just keep generic
+          if (detectedZone) displayZone.display_name = detectedZone.display_name;
+        }
+
+        sessionStorage.setItem('arin_zone', JSON.stringify(displayZone));
+        sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
+        resolve(displayZone);
       },
-      () => {
+      (error) => {
+        console.error("📍 Geolocation Error:", error.message);
         onManualPicker();
         resolve(null);
       },
