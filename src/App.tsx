@@ -1129,10 +1129,10 @@ const WaitingScreen = ({
           if (data.active === false) return;
           
           const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
-          // Strict 1-minute timeout for real-time presence
+          // Relaxed timeout to 5 minutes to account for client clock skew
           const lastActive = data.lastSeen || data.timestamp || 0;
-          const isRecent = Date.now() - lastActive < 60 * 1000;
-          if (dist <= 0.1 && isRecent) {
+          const isRecent = Date.now() - lastActive < 5 * 60 * 1000;
+          if (dist <= 0.5 && isRecent) { // Relaxed distance to 500m to be safe
             found = true;
           }
         });
@@ -2160,7 +2160,7 @@ export default function App() {
           if (isOthers && isRecent && isNewForUs && !alreadyAlerted && currentZone.center.lat !== 0) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
             
-            if (dist <= 0.1) {
+            if (dist <= 0.5) { // Matched the 500m relaxation
               console.log("🎯 MATCH! Triggering SOS Pop-up for:", sosAlert.id);
               
               // Mark as alerted IMMEDIATELY to prevent re-triggering
