@@ -1644,13 +1644,24 @@ export default function App() {
     };
   }, []);
 
-  // --- Auto-detect Location After Login ---
+  // --- Auto-detect Location After Login & 10s Tracking ---
   useEffect(() => {
-    if (user && appState !== 'login' && !sessionStorage.getItem('arin_zone')) {
-      getZoneWithCache(() => setShowManualZonePicker(true)).then((zone) => {
+    if (!user || appState === 'login') return;
+
+    // Initial fetch
+    getZoneWithCache(() => setShowManualZonePicker(true)).then((zone) => {
+      if (zone) setCurrentZone(zone);
+    });
+
+    // Setup 10s interval for live tracking
+    const interval = setInterval(() => {
+      console.log("🔄 Tracking: Fetching latest precise location...");
+      getZoneWithCache(() => {}, true).then((zone) => {
         if (zone) setCurrentZone(zone);
       });
-    }
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [user, appState]);
 
   useEffect(() => {

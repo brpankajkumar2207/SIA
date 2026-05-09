@@ -76,7 +76,7 @@ export const detectZoneLocal = (latitude: number, longitude: number): Zone | nul
   return matchedZone;
 };
 
-export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone | null> => {
+export const getZoneWithCache = async (onManualPicker: () => void, forceRefresh = false): Promise<Zone | null> => {
   const ZONE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   const cached = sessionStorage.getItem('arin_zone');
   const cachedAt = sessionStorage.getItem('arin_zone_cached_at');
@@ -84,7 +84,7 @@ export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone
   const isFresh = cached && cachedAt && 
     (Date.now() - parseInt(cachedAt)) < ZONE_CACHE_DURATION;
 
-  if (isFresh) {
+  if (isFresh && !forceRefresh) {
     return JSON.parse(cached);
   }
 
