@@ -96,13 +96,31 @@ export const getZoneWithCache = async (onManualPicker: () => void): Promise<Zone
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         const zone = detectZoneLocal(latitude, longitude);
+        
         if (zone) {
-          sessionStorage.setItem('arin_zone', JSON.stringify(zone));
+          let preciseZone = { ...zone };
+          
+          try {
+            // Reverse geocode to get a more precise local area name
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.address) {
+                const addr = data.address;
+                const preciseName = addr.neighbourhood || addr.suburb || addr.city_district || addr.town || addr.village || zone.display_name;
+                preciseZone.display_name = preciseName;
+              }
+            }
+          } catch (e) {
+            console.error("Reverse geocoding failed", e);
+          }
+
+          sessionStorage.setItem('arin_zone', JSON.stringify(preciseZone));
           sessionStorage.setItem('arin_zone_cached_at', Date.now().toString());
-          resolve(zone);
+          resolve(preciseZone);
         } else {
           onManualPicker();
           resolve(null);
