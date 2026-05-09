@@ -39,18 +39,246 @@ import {
   EyeOff
 } from 'lucide-react';
 import { askSakhiKnows } from './services/sakhiAI';
+import { auth } from './firebase';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
 
 
 
 // --- Types ---
-type AppState = 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
+type AppState = 'login' | 'idle' | 'finding' | 'peer-chat' | 'chat-summary';
 type AppView = 'main' | 'profile' | 'settings';
 type Tab = 'home' | 'arin' | 'sakhi' | 'capsule';
 type ChatMessage = { role: 'user' | 'ai' | 'peer'; content: string; sender?: string };
 type Question = { id: string; user: string; text: string; time: string; replies: number };
 
 // --- Components ---
-// ... (rest of the components stay same, except specific chat logic)
+const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitchToSignup: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      onLogin();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to login. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-sia-pink-light/30 rounded-full blur-[100px] -mr-40 -mt-40 animate-pulse" />
+      <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-sia-pink-light/20 rounded-full blur-[80px] -ml-40 -mb-40" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md z-10"
+      >
+        <div className="text-center mb-10">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-20 h-20 bg-gradient-to-tr from-sia-pink to-sia-peach rounded-[2rem] flex items-center justify-center shadow-lg mx-auto mb-6"
+          >
+            <Shield className="w-10 h-10 text-white" />
+          </motion.div>
+          <h2 className="font-serif italic font-bold text-5xl text-sia-text mb-2">Welcome Back</h2>
+          <p className="text-sia-text-muted font-light uppercase tracking-[0.2em] text-[10px]">Securely access your sanctuary</p>
+        </div>
+
+        <div className="glass p-10 rounded-[3rem] border border-white shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+          
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Email Identity</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <User className="w-5 h-5" />
+                </div>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Password</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                />
+              </div>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className="w-full h-16 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-xs shadow-lg shadow-sia-pink/20 hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Secure Login <ArrowRight className="w-4 h-4" /></>}
+            </motion.button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-sia-pink-light/30 flex flex-col items-center gap-4">
+            <p className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest opacity-60">Don't have an account?</p>
+            <button 
+              onClick={onSwitchToSignup}
+              className="w-full h-14 bg-white border border-sia-pink-light text-sia-pink rounded-full font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/30 transition-all shadow-sm"
+            >
+              Create an Account
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwitchToLogin: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      onSignup();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to create account.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-sia-pink-light/30 rounded-full blur-[100px] -mr-40 -mt-40 animate-pulse" />
+      <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-sia-pink-light/20 rounded-full blur-[80px] -ml-40 -mb-40" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md z-10"
+      >
+        <div className="text-center mb-10">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-20 h-20 bg-gradient-to-tr from-sia-pink to-sia-peach rounded-[2rem] flex items-center justify-center shadow-lg mx-auto mb-6"
+          >
+            <Sparkles className="w-10 h-10 text-white" />
+          </motion.div>
+          <h2 className="font-serif italic font-bold text-5xl text-sia-text mb-2">Join SIA</h2>
+          <p className="text-sia-text-muted font-light uppercase tracking-[0.2em] text-[10px]">Create your anonymous identity</p>
+        </div>
+
+        <div className="glass p-10 rounded-[3rem] border border-white shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
+          
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Email Identity</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <User className="w-5 h-5" />
+                </div>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-sia-pink opacity-60 ml-4">Password</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full h-16 bg-white/60 border border-sia-pink-light rounded-full pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-sia-pink transition-all text-sia-text font-light"
+                />
+              </div>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className="w-full h-16 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-xs shadow-lg shadow-sia-pink/20 hover:bg-sia-pink-dark transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
+            </motion.button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-sia-pink-light/30 flex flex-col items-center gap-4">
+            <p className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest opacity-60">Already have an account?</p>
+            <button 
+              onClick={onSwitchToLogin}
+              className="w-full h-14 bg-white border border-sia-pink-light text-sia-pink rounded-full font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/30 transition-all shadow-sm"
+            >
+              Login Instead
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const Navbar = ({ onProfile, onBack, showBack = false, activeView }: { onProfile?: () => void; onBack?: () => void; showBack?: boolean; activeView: AppView }) => (
   <nav className="fixed top-0 left-0 w-full h-20 px-10 flex items-center justify-between z-[100] bg-white/40 backdrop-blur-md border-b border-sia-pink-light">
@@ -1039,7 +1267,22 @@ const ArinCommunityPage = ({
 );
 
 export default function App() {
-  const [appState, setAppState] = useState<AppState>('idle');
+  const [appState, setAppState] = useState<AppState | 'loading'>('loading');
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        setAppState('idle');
+      } else {
+        setUser(null);
+        setAppState('login');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [activeView, setActiveView] = useState<AppView>('main');
   const [showSOSModal, setShowSOSModal] = useState(false);
@@ -1162,6 +1405,31 @@ export default function App() {
     setActiveView('main');
     setActiveTab('home');
   };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setShowLogoutModal(false);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  if (appState === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sia-cream">
+        <Loader2 className="w-12 h-12 text-sia-pink animate-spin" />
+      </div>
+    );
+  }
+
+  if (appState === 'login') {
+    return authView === 'login' ? (
+      <LoginPage onLogin={() => setAppState('idle')} onSwitchToSignup={() => setAuthView('signup')} />
+    ) : (
+      <SignupPage onSignup={() => setAppState('idle')} onSwitchToLogin={() => setAuthView('login')} />
+    );
+  }
   if (appState === 'peer-chat') {
     return <PeerChat onBack={() => setAppState('chat-summary')} />;
   }
@@ -1495,10 +1763,7 @@ export default function App() {
         {showLogoutModal && (
           <LogoutModal 
             onClose={() => setShowLogoutModal(false)}
-            onLogout={() => {
-              setShowLogoutModal(false);
-              window.location.reload(); // Simple mock logout
-            }}
+            onLogout={handleLogout}
           />
         )}
       </AnimatePresence>
