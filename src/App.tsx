@@ -479,7 +479,46 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
   );
 };
 
-const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
+const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: FirebaseUser | null }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [userName, setUserName] = useState('Anonymous Sister');
+  const [userEmail, setUserEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setUserEmail(user.email || 'anonymous@sia.com');
+      // Fetch name from Firestore if it exists
+      if (db) {
+        const userRef = doc(db, "users", user.uid);
+        getDocs(query(collection(db, "users"), where("__name__", "==", user.uid))).then(snap => {
+          if (!snap.empty) {
+            const data = snap.docs[0].data();
+            if (data.name) setUserName(data.name);
+            else if (user.displayName) setUserName(user.displayName);
+            else setUserName(user.email?.split('@')[0] || 'Anonymous Sister');
+          }
+        });
+      }
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user || !db) return;
+    setSaving(true);
+    try {
+      await setDoc(doc(db, "users", user.uid), {
+        name: userName
+      }, { merge: true });
+      setIsEditing(false);
+    } catch (e) {
+      console.error("Failed to update profile:", e);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const activities = [
     { type: 'Response', text: 'Responded to "How to deal with extreme cramps?"', time: '2h ago', status: 'Verified' },
     { type: 'Help', text: 'Provided emergency pads to a sister in Library', time: '1 day ago', status: 'Completed' },
@@ -512,7 +551,38 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
         <div className="flex-1 text-center md:text-left space-y-4 z-10">
           <div>
             <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
-              <h2 className="font-serif italic font-bold text-4xl text-sia-text">Deepthi Jain</h2>
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <input 
+                    value={userName} 
+                    onChange={(e) => setUserName(e.target.value)}
+                    className="bg-white/80 border border-sia-pink-light rounded-xl px-4 py-2 font-serif italic font-bold text-2xl text-sia-text focus:outline-none focus:ring-2 focus:ring-sia-pink"
+                  />
+                  <button 
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  </button>
+                  <button 
+                    onClick={() => setIsEditing(false)}
+                    className="p-2 bg-sia-pink-light text-sia-pink rounded-full hover:bg-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="font-serif italic font-bold text-4xl text-sia-text">{userName}</h2>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="p-2 hover:bg-sia-pink-light rounded-full transition-colors opacity-40 hover:opacity-100"
+                  >
+                    <Settings className="w-4 h-4 text-sia-pink" />
+                  </button>
+                </>
+              )}
               <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-100">Verified</div>
             </div>
             <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
@@ -530,7 +600,7 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
             )}
             <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
               <MessageCircle className="w-4 h-4 text-sia-pink/40" />
-              <span className="text-sm font-light">deepthi.jain@example.com</span>
+              <span className="text-sm font-light">{userEmail}</span>
             </div>
             <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted ml-2">
               <AlertCircle className="w-4 h-4 text-sia-pink/40" />
@@ -2653,7 +2723,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <ProfilePage currentZone={currentZone} />
+            <ProfilePage currentZone={currentZone} user={user} />
           </motion.div>
         )}
 
