@@ -1,5 +1,10 @@
 import { initializeApp } from "firebase/app";
+<<<<<<< HEAD
+import { getAuth } from "firebase/auth";
+import { getFirestore, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
+=======
 import { getAuth, type Auth } from "firebase/auth";
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,6 +15,25 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+<<<<<<< HEAD
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize Services
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+// Enable Multi-Tab Persistence for local dev syncing
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        console.warn("Firestore Persistence: Multiple tabs open, persistence can only be enabled in one tab at a time.");
+    } else if (err.code === 'unimplemented') {
+        console.warn("Firestore Persistence: The current browser does not support all of the features required to enable persistence.");
+    }
+});
+
+export default app;
+=======
 const requiredKeys = [
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
@@ -36,3 +60,4 @@ if (!firebaseInitError) {
 }
 
 export const auth = authInstance;
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d

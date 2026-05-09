@@ -36,9 +36,32 @@ import {
   Bookmark,
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+<<<<<<< HEAD
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
+import { auth, db } from './firebase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+
+
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  doc,
+  updateDoc,
+=======
 import { getZoneWithCache, Zone as ArinZone, getDistanceKm } from './services/arinLocationService';
 import { auth, firebaseInitError } from './firebase';
 import { db, firebaseDbInitError } from './services/firebaseConfig';
@@ -58,11 +81,17 @@ import {
   orderBy, 
   doc, 
   updateDoc, 
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   increment,
   setDoc,
   getDocs,
   deleteDoc
 } from "firebase/firestore";
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
 
 
 
@@ -140,7 +169,11 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
       onLogin();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      if (err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please check your credentials or sign up if you don\'t have an account.');
+      } else {
+        setError(err.message || 'Failed to login. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -150,14 +183,14 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
     <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-sia-pink-light/30 rounded-full blur-[100px] -mr-40 -mt-40 animate-pulse" />
       <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-sia-pink-light/20 rounded-full blur-[80px] -ml-40 -mb-40" />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md z-10"
       >
         <div className="text-center mb-10">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="w-20 h-20 bg-gradient-to-tr from-sia-pink to-sia-peach rounded-[2rem] flex items-center justify-center shadow-lg mx-auto mb-6"
@@ -170,7 +203,7 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
 
         <div className="glass p-10 rounded-[3rem] border border-white shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
-          
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
               <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">
@@ -183,8 +216,8 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
                 <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
                   <User className="w-5 h-5" />
                 </div>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   placeholder="name@example.com"
                   value={email}
@@ -200,8 +233,8 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
                 <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
                   <Shield className="w-5 h-5" />
                 </div>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   required
                   placeholder="Enter your password"
                   value={password}
@@ -223,7 +256,7 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
 
           <div className="mt-8 pt-8 border-t border-sia-pink-light/30 flex flex-col items-center gap-4">
             <p className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest opacity-60">Don't have an account?</p>
-            <button 
+            <button
               onClick={onSwitchToSignup}
               className="w-full h-14 bg-white border border-sia-pink-light text-sia-pink rounded-full font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/30 transition-all shadow-sm"
             >
@@ -275,7 +308,11 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
       onSignup();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to create account.');
+      if (err.code === 'auth/invalid-credential') {
+        setError('Authentication configuration error. Please ensure Email/Password provider is enabled in Firebase Console.');
+      } else {
+        setError(err.message || 'Failed to create account.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -285,14 +322,14 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
     <div className="min-h-screen flex items-center justify-center bg-sia-cream p-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-sia-pink-light/30 rounded-full blur-[100px] -mr-40 -mt-40 animate-pulse" />
       <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-sia-pink-light/20 rounded-full blur-[80px] -ml-40 -mb-40" />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md z-10"
       >
         <div className="text-center mb-10">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="w-20 h-20 bg-gradient-to-tr from-sia-pink to-sia-peach rounded-[2rem] flex items-center justify-center shadow-lg mx-auto mb-6"
@@ -305,7 +342,7 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
 
         <div className="glass p-10 rounded-[3rem] border border-white shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
-          
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
               <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">
@@ -318,8 +355,8 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
                 <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
                   <User className="w-5 h-5" />
                 </div>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   placeholder="name@example.com"
                   value={email}
@@ -335,8 +372,8 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
                 <div className="absolute left-6 text-sia-pink/40 pointer-events-none z-10">
                   <Shield className="w-5 h-5" />
                 </div>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   required
                   placeholder="Create a password"
                   value={password}
@@ -358,7 +395,7 @@ const SignupPage = ({ onSignup, onSwitchToLogin }: { onSignup: () => void, onSwi
 
           <div className="mt-8 pt-8 border-t border-sia-pink-light/30 flex flex-col items-center gap-4">
             <p className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest opacity-60">Already have an account?</p>
-            <button 
+            <button
               onClick={onSwitchToLogin}
               className="w-full h-14 bg-white border border-sia-pink-light text-sia-pink rounded-full font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/30 transition-all shadow-sm"
             >
@@ -442,17 +479,33 @@ const ProfileMenu = ({ onClose, onNavigate }: { onClose: () => void, onNavigate:
   );
 };
 
+<<<<<<< HEAD
+const ProfilePage = () => {
+  const activities = [
+    { type: 'Response', text: 'Responded to "How to deal with extreme cramps?"', time: '2h ago', status: 'Verified' },
+    { type: 'Help', text: 'Provided emergency pads to a sister in Library', time: '1 day ago', status: 'Completed' },
+    { type: 'Response', text: 'Shared experience about Gate 2 Pharmacy safety', time: '3 days ago', status: 'Verified' },
+    { type: 'Help', text: 'Walked with a sister to Hostel Block B', time: '1 week ago', status: 'Completed' },
+  ];
+
+  const impactStats = [
+    { label: 'Sisters Helped', value: '14', icon: HeartHandshake, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
+    { label: 'Responses Posted', value: '42', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Trust Level', value: 'Guardian', icon: Shield, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Community Karma', value: '850', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
+=======
 const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
   const stats = [
     { label: 'Saved Remedies', value: '12', icon: Bookmark, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Time Capsules', value: '4', icon: Heart, color: 'text-sia-pink', bg: 'bg-sia-pink-light/30' },
     { label: 'Contributions', value: '28', icon: Award, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'Wellness Streak', value: '7 Days', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
   ];
 
   return (
     <div className="pt-32 px-6 max-w-5xl mx-auto pb-40">
-      <div className="flex flex-col md:flex-row items-center gap-10 mb-20 bg-white/40 p-10 rounded-[3.5rem] border border-white/60 shadow-sm relative overflow-hidden">
+      <div className="flex flex-col md:flex-row items-center gap-10 mb-16 bg-white/40 p-10 rounded-[3.5rem] border border-white/60 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-10 opacity-5 scale-150 rotate-12">
           <Award className="w-64 h-64 text-sia-pink" />
         </div>
@@ -465,11 +518,26 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
           </div>
         </div>
 
-        <div className="flex-1 text-center md:text-left space-y-3 z-10">
-          <div className="flex items-center justify-center md:justify-start gap-3">
-            <h2 className="font-serif italic font-bold text-4xl text-sia-text">Anonymous Sister #4231</h2>
-            <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-100">Verified</div>
+        <div className="flex-1 text-center md:text-left space-y-4 z-10">
+          <div>
+            <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
+              <h2 className="font-serif italic font-bold text-4xl text-sia-text">Deepthi Jain</h2>
+              <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-100">Verified</div>
+            </div>
+            <p className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">Indian Institute of Science (IISc)</p>
           </div>
+<<<<<<< HEAD
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted">
+              <MessageCircle className="w-4 h-4 text-sia-pink/40" />
+              <span className="text-sm font-light">deepthi.jain@example.com</span>
+            </div>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sia-text-muted">
+              <AlertTriangle className="w-4 h-4 text-sia-pink/40" />
+              <span className="text-sm font-light">Emergency: +91 98765 43210</span>
+            </div>
+=======
           <p className="text-sia-text-muted font-light text-lg">"Helping others find comfort and safety."</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
             <span className="px-4 py-2 rounded-full bg-sia-pink text-white text-[10px] font-bold uppercase tracking-widest shadow-md">Guardian Level 3</span>
@@ -481,12 +549,13 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
                 {currentZone.center.lat.toFixed(4)}°N, {currentZone.center.lng.toFixed(4)}°E
               </span>
             )}
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-        {stats.map((stat, i) => (
+        {impactStats.map((stat, i) => (
           <motion.div
             key={i}
             whileHover={{ y: -5 }}
@@ -501,50 +570,34 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="p-10 rounded-[3rem] bg-white/60 border border-sia-pink-light shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink mb-8">Recently Saved</h3>
-          <div className="space-y-4">
-            {[
-              { title: "Ajwain Water for Cramps", type: "Remedy" },
-              { title: "Safe Escort: Hostel Block B", type: "Tip" },
-              { title: "Emergency Supplies: Library", type: "Zone" }
-            ].map((item, i) => (
-              <div key={i} className="p-5 rounded-[1.8rem] bg-white border border-sia-pink-light/30 flex items-center justify-between group cursor-pointer hover:bg-sia-pink-light/10 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-sia-warm-bg flex items-center justify-center text-sia-pink">
-                    <Bookmark className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-sia-text">{item.title}</h4>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-sia-text opacity-30">{item.type}</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-sia-pink opacity-0 group-hover:opacity-40 transition-opacity" />
-              </div>
-            ))}
-          </div>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between px-6">
+          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink">Recent Activities & Impact</h3>
+          <button className="text-[10px] font-bold uppercase tracking-widest text-sia-text-muted hover:text-sia-pink transition-colors">View All History</button>
         </div>
-
-        <div className="p-10 rounded-[3rem] bg-white/60 border border-sia-pink-light shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink mb-8">Support Activity</h3>
-          <div className="space-y-6">
-            {[
-              { text: "Helped a sister with pain relief", time: "2 days ago", icon: HeartHandshake },
-              { text: "Shared a new comfort tip", time: "1 week ago", icon: Sparkles },
-              { text: "Verified a safe zone update", time: "2 weeks ago", icon: Shield }
-            ].map((item, i) => (
-              <div key={i} className="flex gap-5">
-                <div className="w-10 h-10 rounded-full bg-sia-pink-light flex items-center justify-center shrink-0">
-                  <item.icon className="w-4 h-4 text-sia-pink" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {activities.map((activity, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.02 }}
+              className="p-8 rounded-[3rem] bg-white/60 border border-sia-pink-light shadow-sm flex gap-6 items-start group"
+            >
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${activity.type === 'Help' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
+                {activity.type === 'Help' ? <HeartHandshake className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${activity.type === 'Help' ? 'text-green-500' : 'text-blue-500'}`}>{activity.type}</span>
+                  <span className="text-[9px] font-bold text-sia-text-muted opacity-40 uppercase tracking-widest">{activity.time}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-sia-text leading-tight">{item.text}</p>
-                  <p className="text-[10px] text-sia-text-muted mt-1 opacity-50 uppercase font-bold tracking-widest">{item.time}</p>
+                <p className="text-sia-text font-serif italic text-base leading-snug mb-3">"{activity.text}"</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sia-warm-bg text-[8px] font-black uppercase tracking-widest text-sia-text opacity-40">
+                  <CheckCircle className="w-2.5 h-2.5" /> {activity.status}
                 </div>
               </div>
-            ))}
-          </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>
@@ -552,6 +605,10 @@ const ProfilePage = ({ currentZone }: { currentZone?: Zone }) => {
 };
 
 const SettingsPage = () => {
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [settings, setSettings] = useState({
     notifications: true,
     anonymousMode: true,
@@ -567,24 +624,9 @@ const SettingsPage = () => {
 
   const sections = [
     {
-      title: "Privacy & Identity",
+      title: "Help & Support",
       items: [
-        { id: 'anonymousMode', icon: EyeOff, label: 'Anonymous Mode', desc: 'Hide your identity from other users', type: 'toggle' },
-        { id: 'location', icon: MapPin, label: 'Location Permissions', desc: 'Allow SIA to find nearby support', type: 'toggle' },
-      ]
-    },
-    {
-      title: "App Preferences",
-      items: [
-        { id: 'notifications', icon: Bell, label: 'Notifications', desc: 'Get alerts for help requests and replies', type: 'toggle' },
-        { id: 'theme', icon: Moon, label: 'Theme Settings', desc: 'Switch between light and dark mode', type: 'select', options: ['Light', 'Dark', 'System'] },
-      ]
-    },
-    {
-      title: "Safety & Community",
-      items: [
-        { id: 'safety', icon: Shield, label: 'Safety Preferences', desc: 'Configure emergency response intensity', type: 'select', options: ['Low', 'Medium', 'High'] },
-        { id: 'capsuleVisibility', icon: Heart, label: 'Capsule Visibility', desc: 'Who can see your left notes', type: 'select', options: ['Nearby Only', 'All Regions', 'Private'] },
+        { id: 'reportIssue', icon: AlertCircle, label: 'Report an issue', desc: 'Let us know if something isn\'t working correctly', type: 'button' },
       ]
     }
   ];
@@ -626,11 +668,18 @@ const SettingsPage = () => {
                         className="w-6 h-6 rounded-full bg-white shadow-md"
                       />
                     </button>
-                  ) : (
+                  ) : item.type === 'select' ? (
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-black uppercase tracking-widest text-sia-pink opacity-40">{item.options?.[0]}</span>
                       <ChevronRight className="w-4 h-4 text-sia-pink opacity-30" />
                     </div>
+                  ) : (
+                    <button 
+                      onClick={() => item.id === 'reportIssue' && setShowReportModal(true)}
+                      className="w-10 h-10 rounded-full bg-sia-pink/5 flex items-center justify-center text-sia-pink hover:bg-sia-pink hover:text-white transition-all group"
+                    >
+                      <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                    </button>
                   )}
                 </div>
               ))}
@@ -638,6 +687,72 @@ const SettingsPage = () => {
           </div>
         ))}
       </div>
+
+      <AnimatePresence>
+        {showReportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/10 backdrop-blur-md flex items-center justify-center p-6"
+            onClick={() => !isSubmitting && setShowReportModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-lg glass p-10 rounded-[3rem] border border-white shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setShowReportModal(false)}
+                className="absolute top-8 right-8 p-2 hover:bg-sia-pink/5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-sia-text-muted" />
+              </button>
+
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center shadow-sm">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-serif italic font-bold text-2xl text-sia-text">Report an Issue</h3>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sia-text opacity-30">Your safety is our priority</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <p className="text-sm text-sia-text-muted font-light leading-relaxed">
+                  Please describe the problem you faced. Whether it's a scam, a safety concern, or an app bug, we're here to listen and help.
+                </p>
+                
+                <textarea
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  placeholder="Tell us what happened..."
+                  className="w-full h-40 p-6 bg-white/50 rounded-[2rem] border border-sia-pink-light/30 focus:outline-none focus:ring-4 focus:ring-sia-pink/5 transition-all text-sm font-light resize-none placeholder:text-sia-text-muted/40 shadow-inner"
+                />
+
+                <button
+                  disabled={!reportText.trim() || isSubmitting}
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    // Simulate API call
+                    await new Promise(r => setTimeout(r, 1500));
+                    setShowReportModal(false);
+                    setReportText('');
+                    setIsSubmitting(false);
+                    alert("Your report has been submitted anonymously. Thank you for helping keep the community safe.");
+                  }}
+                  className="w-full py-4 bg-sia-pink text-white rounded-full font-bold uppercase tracking-[0.2em] text-xs shadow-lg hover:bg-sia-pink-dark transition-all disabled:opacity-50 disabled:hover:scale-100 active:scale-95"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Grievance"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -694,7 +809,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full h-20 bg-white/40 backdrop-blur-md border-t border-sia-pink-light z-50 px-6">
+    <div className="fixed bottom-0 left-0 w-full h-20 bg-white/40 backdrop-blur-md border-t border-sia-pink-light z-[100] px-6">
       <div className="max-w-5xl mx-auto h-full flex items-center justify-around">
         {tabs.map((tab) => (
           <button
@@ -1154,17 +1269,22 @@ const SectionHeading = ({ title, subtitle, className = "" }: { title: string, su
 );
 
 const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: boolean }) => (
-  <div className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4 px-4`}>
-    <div className={`max-w-[85%] px-5 py-3 rounded-[1.2rem] shadow-sm flex flex-col ${isSakhi
-        ? 'bg-white rounded-tl-none text-sia-text border border-sia-pink-light/40 shadow-sm'
-        : 'bg-sia-pink rounded-br-none text-white shadow-[0_4px_15px_rgba(216,27,96,0.15)]'
+  <motion.div
+    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ type: "spring", damping: 20, stiffness: 200 }}
+    className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4 px-4`}
+  >
+    <div className={`max-w-[85%] px-5 py-3 rounded-[1.5rem] shadow-md flex flex-col ${isSakhi
+      ? 'bg-white rounded-tl-none text-sia-text border border-sia-pink-light/40'
+      : 'bg-sia-pink rounded-br-none text-white shadow-[0_4px_15px_rgba(216,27,96,0.15)]'
       }`}>
       <p className="text-sm leading-relaxed">{message}</p>
-      <div className={`text-[8px] font-bold uppercase tracking-tighter mt-1 opacity-40 self-end ${isSakhi ? 'text-sia-text' : 'text-white'}`}>
+      <div className={`text-[8px] font-bold uppercase tracking-tighter mt-2 opacity-40 self-end ${isSakhi ? 'text-sia-text' : 'text-white'}`}>
         {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
 
@@ -1449,7 +1569,7 @@ const ArinCommunityPage = ({
           value={newQuestion}
           onChange={(e) => setNewQuestion(e.target.value)}
           placeholder="What's on your mind? Ask anonymously in your region..."
-          className="w-full h-32 md:h-48 p-6 md:p-8 bg-sia-cream/50 rounded-[1.5rem] md:rounded-[2.5rem] border border-sia-pink-light/20 focus:outline-none focus:ring-2 focus:ring-sia-pink/20 transition-all text-base md:text-lg font-light resize-none placeholder:text-sia-text-muted/40"
+          className="w-full h-24 md:h-32 p-5 md:p-6 bg-sia-cream/50 rounded-[1.5rem] md:rounded-[2rem] border border-sia-pink-light/20 focus:outline-none focus:ring-2 focus:ring-sia-pink/20 transition-all text-sm md:text-base font-light resize-none placeholder:text-sia-text-muted/40"
         />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
@@ -1470,12 +1590,6 @@ const ArinCommunityPage = ({
       <div className="flex items-center justify-between mb-8 px-4">
         <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-text opacity-30">Questions Nearby</h3>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => window.location.reload()} 
-            className="text-[9px] font-bold uppercase tracking-widest text-sia-pink border border-sia-pink-light/30 px-3 py-1 rounded-full hover:bg-sia-pink/5 transition-all"
-          >
-            Force Sync 🔄
-          </button>
           <div className="flex items-center gap-2 text-[10px] text-sia-pink font-bold uppercase tracking-widest">
             <span className="w-1.5 h-1.5 bg-sia-pink rounded-full animate-pulse" />
             Live Updates • {questions.length} total
@@ -1809,7 +1923,7 @@ export default function App() {
       return;
     }
     console.log("🔥 [Firebase] Connecting to Project:", db.app.options.projectId);
-    
+
     // Listen for questions
     const qQuery = query(collection(db, "arin_questions"), orderBy("timestamp", "desc"));
     const unsubscribeQuestions = onSnapshot(qQuery, (snapshot) => {
@@ -2042,7 +2156,7 @@ export default function App() {
       city: currentZone.city,
       timestamp: Date.now()
     };
-    
+
     try {
       await addDoc(collection(activeDb, "arin_questions"), qData);
       setNewQuestion('');
@@ -2054,12 +2168,16 @@ export default function App() {
   const handlePostResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!responseInput.trim() || !selectedQuestion) return;
+<<<<<<< HEAD
+
+=======
     const activeDb = db;
     if (!activeDb) {
       alert('Firebase is not configured yet. Please add Firebase keys in .env.');
       return;
     }
     
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
     setIsVerifying(true);
     // Add a temporary local message to show it's "Verifying"
     const tempResponseId = 'temp-' + Date.now();
@@ -2078,7 +2196,7 @@ export default function App() {
 
     try {
       const moderation = await moderateArinResponse(selectedQuestion.text, responseInput);
-      
+
       // Remove the temp message
       setArinResponses(prev => prev.filter(r => r.id !== tempResponseId));
 
@@ -2100,8 +2218,13 @@ export default function App() {
         timestamp: Date.now()
       };
 
+<<<<<<< HEAD
+      await addDoc(collection(db, "arin_responses"), resData);
+
+=======
       await addDoc(collection(activeDb, "arin_responses"), resData);
       
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
       // Increment reply count
       const qRef = doc(activeDb, "arin_questions", selectedQuestion.id);
       await updateDoc(qRef, {
@@ -2433,10 +2556,37 @@ export default function App() {
             {activeTab === 'arin' && (
               <motion.div
                 key="arin"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] bg-sia-cream flex flex-col pt-20 pb-20 overflow-hidden"
               >
+<<<<<<< HEAD
+                <div className="flex-1 w-full flex flex-col bg-white/40 backdrop-blur-sm relative overflow-hidden">
+                   {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+                  
+                  <div className="flex-1 overflow-y-auto scrollbar-hide">
+                    <ArinCommunityPage
+                      questions={questions}
+                      newQuestion={newQuestion}
+                      setNewQuestion={setNewQuestion}
+                      handlePostQuestion={handlePostQuestion}
+                      onRespond={(q) => {
+                        setSelectedQuestion(q);
+                        setShowRespondModal(true);
+                      }}
+                      onHeartResponse={async (id) => {
+                        setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
+                        const rRef = doc(db, "arin_responses", id);
+                        await updateDoc(rRef, { likes: increment(1) });
+                      }}
+                      currentZone={currentZone}
+                      responses={arinResponses}
+                    />
+                  </div>
+                </div>
+=======
                 <ArinCommunityPage
                   questions={questions}
                   newQuestion={newQuestion}
@@ -2462,6 +2612,7 @@ export default function App() {
                   currentZone={currentZone}
                   responses={arinResponses}
                 />
+>>>>>>> 591a4e4163c901acb896777bd04e45ad8c70b41d
               </motion.div>
             )}
 
@@ -2479,71 +2630,104 @@ export default function App() {
             {activeTab === 'sakhi' && (
               <motion.div
                 key="sakhi"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="pt-20 md:pt-32 px-0 md:px-6 max-w-4xl mx-auto flex flex-col items-center pb-0 md:pb-40 h-[calc(100vh-80px)] md:h-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] bg-sia-cream flex flex-col pt-20 pb-20"
               >
-                <SectionHeading
-                  title="Sakhi Wellness"
-                  subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
-                  className="hidden md:block"
-                />
+                <div className="flex-1 w-full flex flex-col bg-white/40 backdrop-blur-sm overflow-hidden relative">
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.8px, transparent 0.8px)', backgroundSize: '30px 30px' }} />
 
-                <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col h-[500px] md:h-[650px] overflow-hidden relative">
-                  {/* WhatsApp-style Background Pattern (Subtle) */}
-                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
-
-                  <div className="flex items-center gap-4 mb-2 md:mb-10 p-4 md:p-5 bg-white md:bg-sia-cream border-b md:border border-sia-pink-light/30 z-10">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
-                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  {/* Header - Integrated with SIA Branding */}
+                  <div className="flex items-center justify-between p-4 md:p-8 bg-white/80 backdrop-blur-md border-b border-sia-pink-light/30 z-10">
+                    <div className="flex items-center gap-6">
+                      <motion.div 
+                        animate={{ rotate: [0, 15, -15, 0] }}
+                        transition={{ repeat: Infinity, duration: 4 }}
+                        className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-xl"
+                      >
+                        <Sparkles className="w-8 h-8 text-white" />
+                      </motion.div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-2xl font-bold text-sia-pink font-serif italic tracking-tighter">SIA</span>
+                          <span className="text-sia-text/20">|</span>
+                          <h4 className="font-bold text-sia-text text-base uppercase tracking-widest">Wellness AI</h4>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          Secure Session Active
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-sia-text italic font-serif text-sm md:text-base">Sakhi Companion</h4>
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                        Ready to support
+                    <div className="hidden md:flex items-center gap-3">
+                      <div className="px-6 py-2.5 rounded-full bg-sia-pink/5 border border-sia-pink/10 text-[10px] font-bold text-sia-pink uppercase tracking-[0.2em] shadow-sm">
+                        Private & Encrypted
                       </div>
                     </div>
                   </div>
 
+                  {/* Messages Area */}
                   <div
                     ref={chatContainerRef}
-                    className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide px-2"
+                    className="flex-1 space-y-8 overflow-y-auto scrollbar-hide px-4 md:px-12 py-10 relative z-0"
                   >
-                    {chatMessages.map((msg, i) => (
-                      <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
-                    ))}
+                    <AnimatePresence mode="popLayout">
+                      {chatMessages.map((msg, i) => (
+                        <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
+                      ))}
+                    </AnimatePresence>
+                    
                     {isTyping && (
-                      <div className="flex justify-start mb-4">
-                        <div className="bg-sia-cream px-5 py-3 rounded-[1.5rem] rounded-tl-none border border-sia-pink-light/30 flex items-center gap-3">
-                          <Loader2 className="w-4 h-4 text-sia-pink animate-spin" />
-                          <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest">Sakhi is thinking...</span>
+                      <motion.div 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex justify-start mb-4 px-4"
+                      >
+                        <div className="bg-white/90 backdrop-blur-sm px-8 py-5 rounded-[2rem] rounded-tl-none border border-sia-pink-light/30 flex items-center gap-4 shadow-sm">
+                          <div className="flex gap-1.5">
+                            <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="w-2 h-2 bg-sia-pink rounded-full" />
+                            <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-2 h-2 bg-sia-pink rounded-full" />
+                            <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-2 h-2 bg-sia-pink rounded-full" />
+                          </div>
+                          <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-[0.3em]">Sakhi is reflecting...</span>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
                     <div ref={chatEndRef} />
                   </div>
 
-                  <div className="mt-auto p-4 bg-white md:bg-transparent border-t md:border-none border-sia-pink-light/30">
+                  {/* Input Area */}
+                  <div className="p-4 md:p-6 bg-white/90 backdrop-blur-md border-t border-sia-pink-light/30 z-10">
                     <form
-                      className="relative"
+                      className="relative max-w-4xl mx-auto"
                       onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
                     >
-                      <input
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        placeholder="Ask Sakhi anything about period wellness..."
-                        disabled={isTyping}
-                        className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isTyping}
-                        className="absolute right-3 top-3 w-10 h-10 rounded-full bg-sia-pink flex items-center justify-center text-white shadow-lg hover:bg-sia-pink-light hover:text-sia-pink transition-all disabled:bg-gray-200"
+                      <motion.div
+                        whileFocus={{ scale: 1.01 }}
+                        className="relative flex items-center"
                       >
-                        <ArrowRight className="w-5 h-5 ghost-pulse" />
-                      </button>
+                        <input
+                          value={userInput}
+                          onChange={(e) => setUserInput(e.target.value)}
+                          placeholder="Ask Sakhi something..."
+                          disabled={isTyping}
+                          className="w-full bg-sia-warm-bg border border-sia-pink-light/40 h-12 md:h-14 rounded-full px-6 pr-16 focus:outline-none focus:border-sia-pink focus:ring-4 focus:ring-sia-pink/5 shadow-inner transition-all disabled:opacity-50 text-sm md:text-base font-light placeholder:text-sia-text/30"
+                        />
+                        <motion.button
+                          type="submit"
+                          disabled={isTyping || !userInput.trim()}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-sia-pink flex items-center justify-center text-white shadow-lg hover:bg-sia-pink-dark transition-all disabled:bg-gray-200 disabled:shadow-none"
+                        >
+                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                        </motion.button>
+                      </motion.div>
+                      <div className="flex items-center justify-center gap-2 mt-3 text-[8px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-30">
+                        <Shield className="w-2.5 h-2.5" /> Sakhi provides wellness support, not medical advice.
+                      </div>
                     </form>
                   </div>
                 </div>
