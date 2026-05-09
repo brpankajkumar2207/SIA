@@ -608,11 +608,13 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                   <input
                     value={institution}
                     onChange={(e) => setInstitution(e.target.value)}
-                    placeholder="Institution"
-                    className="bg-white border-2 border-sia-pink-light rounded-xl px-4 py-2 text-sm text-sia-text focus:outline-none focus:border-sia-pink focus:ring-4 focus:ring-sia-pink/10 w-full max-w-xs shadow-sm transition-all"
+                    placeholder="Enter your institution name..."
+                    className="bg-white border-2 border-sia-pink-light rounded-2xl px-5 py-3 text-base text-sia-text focus:outline-none focus:border-sia-pink focus:ring-8 focus:ring-sia-pink/10 w-full max-w-sm shadow-md transition-all placeholder:text-sia-text-muted/40"
                   />
                 ) : (
-                  <span className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">{institution}</span>
+                  <span className="text-sia-text-muted font-medium text-sm uppercase tracking-widest opacity-60">
+                    {institution || "Enter your institution name..."}
+                  </span>
                 )}
               </div>
 
@@ -627,11 +629,13 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
                   <input
                     value={userPhone}
                     onChange={(e) => setUserPhone(e.target.value)}
-                    placeholder="Phone Number"
-                    className="bg-white border-2 border-sia-pink-light rounded-xl px-4 py-2 text-sm text-sia-text focus:outline-none focus:border-sia-pink focus:ring-4 focus:ring-sia-pink/10 w-full max-w-xs shadow-sm transition-all"
+                    placeholder="Enter your phone number..."
+                    className="bg-white border-2 border-sia-pink-light rounded-2xl px-5 py-3 text-base text-sia-text focus:outline-none focus:border-sia-pink focus:ring-8 focus:ring-sia-pink/10 w-full max-w-sm shadow-md transition-all placeholder:text-sia-text-muted/40"
                   />
                 ) : (
-                  <span className="text-sia-text-muted font-light text-sm">{userPhone}</span>
+                  <span className="text-sia-text-muted font-light text-sm">
+                    {userPhone || "Enter your phone number..."}
+                  </span>
                 )}
               </div>
             </div>
@@ -1250,7 +1254,7 @@ const WaitingScreen = ({
       {!matchFound && (
         <div className="bg-white/40 backdrop-blur-md px-6 py-4 rounded-full flex items-center gap-3 mb-12 border border-sia-pink-light shadow-sm">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span className="text-xs uppercase tracking-widest font-bold opacity-60">Searching within ~300m</span>
+          <span className="text-[9px] uppercase tracking-widest font-bold text-sia-text/40">Ephemeral Connection • Verified Support</span>
         </div>
       )}
 
@@ -2338,6 +2342,36 @@ export default function App() {
     };
   }, [user, currentZone, appState]);
 
+  // --- Monitor Active Session Status (Sync termination for both parties) ---
+  useEffect(() => {
+    if (!db || !activeSosId || appState === 'finding' || appState === 'login') return;
+
+    const sosRef = doc(db, "active_sos_alerts", activeSosId);
+    const unsubscribe = onSnapshot(sosRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (!data.active) {
+          console.log("🛑 [Session] Terminated by peer or cancelled.");
+          setActiveSosId(null);
+          setConnectedPeerName(null);
+          setAppState('idle');
+          setActiveTab('home');
+        }
+      } else {
+        // Doc deleted or doesn't exist anymore
+        console.log("🗑️ [Session] Alert document removed.");
+        setActiveSosId(null);
+        setConnectedPeerName(null);
+        setAppState('idle');
+        setActiveTab('home');
+      }
+    }, (error) => {
+      console.error("❌ Session Monitor Error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [activeSosId, db, appState]);
+
   // --- Auto-detect Location After Login & 10s Tracking ---
   const updateLocationInFirebase = async (zone: Zone) => {
     if (!user || !db || zone.center.lat === 0) return;
@@ -3056,7 +3090,7 @@ export default function App() {
                     </div>
                     <div className="hidden md:flex items-center gap-3">
                       <div className="px-6 py-2.5 rounded-full bg-sia-pink/5 border border-sia-pink/10 text-[10px] font-bold text-sia-pink uppercase tracking-[0.2em] shadow-sm">
-                        Private & Encrypted
+                        Private & Secure Session
                       </div>
                     </div>
                   </div>

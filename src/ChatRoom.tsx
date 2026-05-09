@@ -151,7 +151,7 @@ function ChatRoom({
       {/* Info Banner */}
       <div className="bg-white/40 border-b border-sia-pink-light/30 px-6 py-2 flex items-center justify-center gap-2">
         <Shield className="w-3 h-3 text-sia-pink/40" />
-        <span className="text-[9px] uppercase tracking-widest font-bold text-sia-text/40">Ephemeral Connection • End-to-End Encrypted</span>
+        <span className="text-[9px] uppercase tracking-widest font-bold text-sia-text/40">Ephemeral Connection • Verified Support</span>
       </div>
 
       {/* Messages Area */}
@@ -176,11 +176,7 @@ function ChatRoom({
                 className={`flex ${msg.senderId === currentUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`max-w-[85%] group`}>
-                  {msg.senderId !== currentUser && (
-                    <div className="text-[10px] font-black uppercase tracking-widest text-sia-pink mb-1 ml-4 opacity-40">
-                      Sister
-                    </div>
-                  )}
+
                   <div className={`
                     p-4 rounded-[2rem] shadow-sm text-sm leading-relaxed
                     ${msg.senderId === currentUser 
