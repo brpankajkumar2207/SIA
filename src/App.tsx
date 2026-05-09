@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   Heart,
   Shield,
   User,
@@ -40,6 +40,19 @@ import {
 } from 'lucide-react';
 import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
 import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
+import { db } from './services/firebaseConfig';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  onSnapshot, 
+  orderBy, 
+  doc, 
+  updateDoc, 
+  increment,
+  setDoc
+} from "firebase/firestore";
 
 
 
@@ -66,7 +79,7 @@ const Navbar = ({ onProfile, onBack, showBack = false, activeView }: { onProfile
       <div className="text-2xl font-bold tracking-tighter text-sia-pink font-serif italic">SIA</div>
     </div>
     <div className="flex items-center gap-6">
-      <motion.div 
+      <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className={`w-11 h-11 rounded-full border-2 border-white glass shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 group relative
@@ -140,7 +153,7 @@ const ProfilePage = () => {
         <div className="absolute top-0 right-0 p-10 opacity-5 scale-150 rotate-12">
           <Award className="w-64 h-64 text-sia-pink" />
         </div>
-        
+
         <div className="w-32 h-32 rounded-full border-4 border-white glass shadow-xl flex items-center justify-center relative group">
           <div className="absolute inset-0 rounded-full bg-sia-pink/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           <User className="w-12 h-12 text-sia-pink/40" />
@@ -268,8 +281,8 @@ const SettingsPage = () => {
 
   return (
     <div className="pt-32 px-6 max-w-3xl mx-auto pb-40">
-      <SectionHeading 
-        title="Settings ⚙️" 
+      <SectionHeading
+        title="Settings ⚙️"
         subtitle="Customize your SIA experience to feel safe and supported."
       />
 
@@ -279,8 +292,8 @@ const SettingsPage = () => {
             <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-pink opacity-40 ml-4">{section.title}</h3>
             <div className="bg-white/60 rounded-[3rem] border border-sia-pink-light shadow-sm overflow-hidden">
               {section.items.map((item, i) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className={`p-8 flex items-center justify-between hover:bg-white/40 transition-colors ${i !== section.items.length - 1 ? 'border-b border-sia-pink-light/30' : ''}`}
                 >
                   <div className="flex items-center gap-5">
@@ -292,15 +305,15 @@ const SettingsPage = () => {
                       <p className="text-[10px] text-sia-text-muted font-light mt-0.5">{item.desc}</p>
                     </div>
                   </div>
-                  
+
                   {item.type === 'toggle' ? (
-                    <button 
+                    <button
                       onClick={() => toggle(item.id as keyof typeof settings)}
                       className={`w-14 h-8 rounded-full transition-all duration-300 relative p-1 ${settings[item.id as keyof typeof settings] ? 'bg-sia-pink' : 'bg-sia-pink-light'}`}
                     >
-                      <motion.div 
+                      <motion.div
                         animate={{ x: settings[item.id as keyof typeof settings] ? 24 : 0 }}
-                        className="w-6 h-6 rounded-full bg-white shadow-md" 
+                        className="w-6 h-6 rounded-full bg-white shadow-md"
                       />
                     </button>
                   ) : (
@@ -337,7 +350,7 @@ const LogoutModal = ({ onClose, onLogout }: { onClose: () => void, onLogout: () 
       <div className="w-20 h-20 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-8">
         <LogOut className="w-8 h-8" />
       </div>
-      
+
       <h3 className="font-serif italic font-bold text-3xl mb-4 text-sia-text">Are you sure?</h3>
       <p className="text-sia-text-muted text-sm font-light mb-10">
         You are about to sign out from SIA. Your anonymous session data will be preserved for your next visit.
@@ -377,16 +390,15 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab: Tab, onTabChange: (t
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-4 py-2 ${
-              activeTab === tab.id ? 'text-sia-pink' : 'text-sia-text-muted opacity-40 hover:opacity-60'
-            }`}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-4 py-2 ${activeTab === tab.id ? 'text-sia-pink' : 'text-sia-text-muted opacity-40 hover:opacity-60'
+              }`}
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-sia-pink/10' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>
             {activeTab === tab.id && (
-              <motion.div 
-                layoutId="nav-pill" 
-                className="absolute inset-0 bg-sia-pink/5 rounded-2xl -z-10" 
+              <motion.div
+                layoutId="nav-pill"
+                className="absolute inset-0 bg-sia-pink/5 rounded-2xl -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
@@ -421,7 +433,7 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       className="fixed inset-0 z-[100] bg-sia-cream flex flex-col"
@@ -437,15 +449,14 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
         </div>
       </div>
 
-      <div 
+      <div
         ref={chatContainerRef}
         className="flex-1 p-6 overflow-y-auto space-y-4"
       >
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${
-              m.role === 'user' ? 'bg-sia-pink text-white rounded-br-none' : 'bg-white text-sia-text rounded-tl-none border border-sia-pink-light'
-            }`}>
+            <div className={`max-w-[80%] p-4 rounded-[1.5rem] shadow-sm ${m.role === 'user' ? 'bg-sia-pink text-white rounded-br-none' : 'bg-white text-sia-text rounded-tl-none border border-sia-pink-light'
+              }`}>
               {m.sender && <div className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">{m.sender}</div>}
               <p className="text-sm">{m.content}</p>
             </div>
@@ -455,7 +466,7 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
 
       <form onSubmit={sendMsg} className="p-6 bg-white border-t border-sia-pink-light">
         <div className="relative">
-          <input 
+          <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
@@ -475,24 +486,24 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
 
 const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, onHelpReceived: () => void }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[100] bg-sia-cream/80 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto"
     >
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         className="w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-2xl border border-sia-pink-light flex flex-col items-center text-center relative overflow-hidden my-auto"
       >
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
-        
+
         <div className="w-20 h-20 rounded-full bg-sia-pink-light/30 flex items-center justify-center mb-6">
           <MessageCircle className="w-8 h-8 text-sia-pink" />
         </div>
-        
+
         <h3 className="font-serif italic font-bold text-3xl mb-2 text-sia-text">Session Active</h3>
         <p className="text-sia-text-muted text-sm font-light mb-8 leading-relaxed max-w-md mx-auto">
           Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
@@ -508,7 +519,7 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
           >
             <MessageSquare className="w-4 h-4" /> Open Chat
           </button>
-          
+
           <button
             onClick={onHelpReceived}
             className="w-full h-16 rounded-full bg-white border border-sia-pink-light text-sia-pink font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-sia-pink-light/10 transition-all flex items-center justify-center gap-3"
@@ -536,7 +547,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -554,7 +565,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
         <div className="w-12 h-1 bg-[#FCE4EC] rounded-full mx-auto mb-10" />
         <h3 className="font-serif italic font-bold text-3xl text-center mb-2 text-sia-text">How can we help?</h3>
         <p className="text-sia-text-muted text-center mb-8 px-4 font-light">Your request will be broadcasted anonymously to nearby verified women.</p>
-        
+
         <div className="grid grid-cols-1 gap-4">
           {options.map((opt) => (
             <motion.button
@@ -575,8 +586,8 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
             </motion.button>
           ))}
         </div>
-        
-        <button 
+
+        <button
           onClick={onClose}
           className="absolute top-6 right-8 p-3 rounded-full bg-sia-cream text-sia-pink-light hover:text-sia-pink transition-colors"
         >
@@ -602,7 +613,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
       <div className="relative mb-12">
         <div className="absolute inset-0 w-80 h-80 -left-8 -top-8 border border-sia-pink/10 rounded-full opacity-50" />
         <div className="absolute inset-0 w-64 h-64 border border-sia-pink/20 rounded-full opacity-40" />
-        
+
         <div className={`w-48 h-48 rounded-full bg-gradient-to-br transition-all duration-700 ${matchFound ? 'from-green-400 to-green-600 scale-110 shadow-[0_20px_60px_rgba(34,197,94,0.3)]' : 'from-sia-peach to-sia-pink shadow-[0_20px_50px_rgba(216,27,96,0.3)] pulsate'} flex flex-col items-center justify-center text-white border-4 border-white/20 z-10 relative`}>
           {matchFound ? (
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
@@ -621,15 +632,15 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
           <motion.div
             key={i}
             initial={{ opacity: 0, scale: 0 }}
-            animate={{ 
-              opacity: [0, 1, 0], 
+            animate={{
+              opacity: [0, 1, 0],
               scale: [0, 1, 1.2],
               x: Math.random() * 260 - 130,
               y: Math.random() * 260 - 130
             }}
-            transition={{ 
-              duration: 3, 
-              repeat: Infinity, 
+            transition={{
+              duration: 3,
+              repeat: Infinity,
               delay: i * 0.5,
               ease: "easeOut"
             }}
@@ -639,21 +650,21 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
           </motion.div>
         ))}
       </div>
-      
+
       <h2 className="font-serif italic text-4xl text-center mb-3 text-sia-text">
         {matchFound ? 'Sister found!' : 'Finding support...'}
       </h2>
       <p className="text-sia-text-muted text-center mb-8 max-w-sm font-light">
         {matchFound ? 'A nearby sister has confirmed she can help.' : 'Connecting you with verified sisters nearby. Your identity remains private throughout.'}
       </p>
-      
+
       {!matchFound && (
         <div className="bg-white/40 backdrop-blur-md px-6 py-4 rounded-full flex items-center gap-3 mb-12 border border-sia-pink-light shadow-sm">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           <span className="text-xs uppercase tracking-widest font-bold opacity-60">Searching within ~300m</span>
         </div>
       )}
-      
+
       {matchFound ? (
         <motion.button
           initial={{ y: 20, opacity: 0 }}
@@ -672,7 +683,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
 
       <div className="flex flex-col gap-4 w-full max-w-xs mt-8">
         {!matchFound && (
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.02, backgroundColor: '#fff' }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-4 rounded-full bg-white/60 border border-sia-pink-light shadow-sm font-bold text-sia-pink h-14 uppercase tracking-widest text-xs"
@@ -680,7 +691,7 @@ const WaitingScreen = ({ onCancel, onMatchFound }: { onCancel: () => void, onMat
             Stay Safe
           </motion.button>
         )}
-        <button 
+        <button
           onClick={onCancel}
           className="w-full py-2 text-[10px] text-sia-pink opacity-40 uppercase tracking-widest font-bold hover:opacity-100 transition-opacity"
         >
@@ -700,11 +711,10 @@ const SectionHeading = ({ title, subtitle, className = "" }: { title: string, su
 
 const ChatBubble = ({ message, isSakhi = false }: { message: string, isSakhi?: boolean }) => (
   <div className={`flex ${isSakhi ? 'justify-start' : 'justify-end'} mb-4 px-4`}>
-    <div className={`max-w-[85%] px-5 py-3 rounded-[1.2rem] shadow-sm flex flex-col ${
-      isSakhi 
-        ? 'bg-white rounded-tl-none text-sia-text border border-sia-pink-light/40 shadow-sm' 
+    <div className={`max-w-[85%] px-5 py-3 rounded-[1.2rem] shadow-sm flex flex-col ${isSakhi
+        ? 'bg-white rounded-tl-none text-sia-text border border-sia-pink-light/40 shadow-sm'
         : 'bg-sia-pink rounded-br-none text-white shadow-[0_4px_15px_rgba(216,27,96,0.15)]'
-    }`}>
+      }`}>
       <p className="text-sm leading-relaxed">{message}</p>
       <div className={`text-[8px] font-bold uppercase tracking-tighter mt-1 opacity-40 self-end ${isSakhi ? 'text-sia-text' : 'text-white'}`}>
         {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -733,7 +743,7 @@ const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
       <div className="absolute top-0 right-0 p-12 opacity-[0.03] scale-150 group-hover:rotate-12 transition-transform duration-1000">
         <Brain className={`${compact ? 'w-32 h-32' : 'w-64 h-64'} text-sia-pink`} />
       </div>
-      
+
       <div className="relative z-10">
         <div className={`flex items-center gap-4 ${compact ? 'mb-6 text-left' : 'mb-10'}`}>
           <div className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} rounded-[1.2rem] bg-gradient-to-tr from-sia-pink to-sia-peach flex items-center justify-center shadow-[0_10px_30px_rgba(216,27,96,0.3)]`}>
@@ -747,7 +757,7 @@ const WisdomSummary = ({ compact = false }: { compact?: boolean }) => {
 
         <div className={`grid grid-cols-1 ${compact ? 'gap-4' : 'md:grid-cols-2 gap-8'}`}>
           {insights.map((item, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               whileHover={{ x: 5 }}
               className={`flex items-start gap-4 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] bg-white/40 border border-white/60 shadow-sm text-left`}
@@ -784,7 +794,7 @@ const CapsuleCard = ({ icon: Icon, text, zone, time, category, clusterCount }: a
       </div>
     </div>
     {clusterCount > 0 && (
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="absolute -top-3 -right-3 px-4 py-2 bg-white border border-sia-pink-light text-sia-pink text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-2"
@@ -836,7 +846,7 @@ const TimeCapsulePage = () => {
         ))}
       </div>
 
-    <div className="relative z-10">
+      <div className="relative z-10">
         <SectionHeading
           title="Time Capsule 💗"
           subtitle="Anonymous wisdom, comfort, and survival notes left by women nearby."
@@ -872,15 +882,15 @@ const TimeCapsulePage = () => {
             <div className="h-px w-20 bg-sia-pink-light mb-6" />
             <h3 className="text-xs font-bold uppercase tracking-[0.4em] text-sia-pink opacity-40 text-center">Most Shared Nearby Insights ✨</h3>
           </div>
-          
+
           <div className="space-y-6">
             {[
               { text: "Emergency pads are most commonly found near library washrooms.", icon: Sparkles, count: "85% verification" },
               { text: "Washroom maintenance issues are currently trending near the cafeteria zone.", icon: AlertTriangle, count: "Trending" },
               { text: "Heat therapy and hydration are the most suggested cramps remedies nearby.", icon: Droplets, count: "Community Choice" }
             ].map((insight, i) => (
-              <motion.div 
-                key={i} 
+              <motion.div
+                key={i}
                 whileHover={{ scale: 1.01 }}
                 className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-sia-warm-bg border border-sia-pink-light/50 group cursor-pointer"
               >
@@ -916,7 +926,7 @@ const TimeCapsulePage = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sia-peach via-sia-pink to-sia-peach" />
-                
+
                 <button onClick={() => setShowWriteModal(false)} className="absolute top-6 right-6 md:top-10 md:right-10 p-2 md:p-3 rounded-full hover:bg-sia-pink-light/30 text-sia-text/40 hover:text-sia-pink transition-all z-[110]">
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
@@ -948,7 +958,7 @@ const TimeCapsulePage = () => {
                   >
                     Seal in Capsule 💗
                   </button>
-                  
+
                 </div>
               </motion.div>
             </motion.div>
@@ -961,18 +971,19 @@ const TimeCapsulePage = () => {
 
 // Arin Page - Community Forum
 // Arin Page - Community Forum
-const ArinCommunityPage = ({ 
-  questions, 
-  newQuestion, 
-  setNewQuestion, 
+const ArinCommunityPage = ({
+  questions,
+  newQuestion,
+  setNewQuestion,
   handlePostQuestion,
   onRespond,
+  onHeartResponse,
   currentZone,
   responses
-}: { 
-  questions: Question[], 
-  newQuestion: string, 
-  setNewQuestion: (v: string) => void, 
+}: {
+  questions: Question[],
+  newQuestion: string,
+  setNewQuestion: (v: string) => void,
   handlePostQuestion: (e: React.FormEvent) => void,
   onRespond: (q: Question) => void,
   onHeartResponse: (id: string) => void,
@@ -1014,15 +1025,25 @@ const ArinCommunityPage = ({
     <div className="space-y-8">
       <div className="flex items-center justify-between mb-8 px-4">
         <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-sia-text opacity-30">Questions Nearby</h3>
-        <div className="flex items-center gap-2 text-[10px] text-sia-pink font-bold uppercase tracking-widest">
-          <span className="w-1.5 h-1.5 bg-sia-pink rounded-full animate-pulse" />
-          Live Updates
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-[9px] font-bold uppercase tracking-widest text-sia-pink border border-sia-pink-light/30 px-3 py-1 rounded-full hover:bg-sia-pink/5 transition-all"
+          >
+            Force Sync 🔄
+          </button>
+          <div className="flex items-center gap-2 text-[10px] text-sia-pink font-bold uppercase tracking-widest">
+            <span className="w-1.5 h-1.5 bg-sia-pink rounded-full animate-pulse" />
+            Live Updates • {questions.length} total
+          </div>
         </div>
       </div>
-      
+
+      {console.log("🏙️ Current Zone:", currentZone.id, "| Total Questions Received:", questions.length)}
+
       {questions.filter(q => q.zone_id === currentZone.id).length === 0 && (
         <div className="p-20 text-center bg-white/40 rounded-[3rem] border border-dashed border-sia-pink-light/40">
-           <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.display_name}. This space is safe and anonymous.</p>
+          <p className="font-serif italic text-2xl text-sia-text opacity-40">Be the first to ask in {currentZone.display_name}. This space is safe and anonymous.</p>
         </div>
       )}
 
@@ -1039,7 +1060,7 @@ const ArinCommunityPage = ({
             <span className="text-[10px] text-gray-300 font-bold uppercase ml-auto tracking-widest">{q.time}</span>
           </div>
           <h4 className="font-serif italic font-bold text-sia-text text-xl md:text-3xl leading-snug mb-10 group-hover:text-sia-pink transition-colors">“{q.text}”</h4>
-          
+
           {/* Responses Sub-feed */}
           <div className="space-y-4 mb-8">
             {responses.filter(r => r.question_id === q.id).map(r => (
@@ -1049,14 +1070,14 @@ const ArinCommunityPage = ({
                   <span className="text-[9px] font-bold uppercase tracking-widest text-sia-pink opacity-60">Anonymous Sister</span>
                   <span className="text-[9px] text-gray-300 ml-auto uppercase font-bold">{r.time}</span>
                 </div>
-                
+
                 {r.verdict === 'APPROVED' ? (
                   <>
                     <p className="text-sm text-sia-text font-light leading-relaxed">
                       {r.show_original ? r.text : r.safe_summary}
                     </p>
                     <div className="mt-3 flex items-center justify-end">
-                      <button 
+                      <button
                         onClick={() => onHeartResponse(r.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-sia-pink-light/30 hover:border-sia-pink/50 transition-all active:scale-90"
                       >
@@ -1082,7 +1103,7 @@ const ArinCommunityPage = ({
               </div>
               <span className="text-xs font-bold text-sia-text-muted uppercase tracking-widest">{q.replies} Replies</span>
             </div>
-            <button 
+            <button
               onClick={() => onRespond(q)}
               className="w-full md:w-auto text-[10px] font-bold uppercase tracking-[0.2em] text-sia-pink hover:bg-sia-pink hover:text-white px-8 py-3 rounded-full border border-sia-pink/20 transition-all shadow-sm active:scale-95"
             >
@@ -1095,16 +1116,16 @@ const ArinCommunityPage = ({
   </div>
 );
 
-const ArinRespondModal = ({ 
-  question, 
-  onClose, 
+const ArinRespondModal = ({
+  question,
+  onClose,
   onPost,
   input,
   setInput,
   isVerifying
-}: { 
-  question: Question, 
-  onClose: () => void, 
+}: {
+  question: Question,
+  onClose: () => void,
   onPost: (e: React.FormEvent) => void,
   input: string,
   setInput: (v: string) => void,
@@ -1163,12 +1184,12 @@ const ArinRespondModal = ({
   </motion.div>
 );
 
-const LocationExplainerModal = ({ 
-  onAllow, 
-  onManual 
-}: { 
-  onAllow: () => void, 
-  onManual: () => void 
+const LocationExplainerModal = ({
+  onAllow,
+  onManual
+}: {
+  onAllow: () => void,
+  onManual: () => void
 }) => (
   <motion.div
     initial={{ opacity: 0 }}
@@ -1186,7 +1207,7 @@ const LocationExplainerModal = ({
       </div>
       <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-4 tracking-tight">Find Your ARIN City</h3>
       <p className="text-sia-text-muted font-light leading-relaxed mb-10">
-        ARIN connects you with verified sisters in your city — anonymously. 
+        ARIN connects you with verified sisters in your city — anonymously.
         Your exact location is never stored.
       </p>
       <div className="space-y-4">
@@ -1207,12 +1228,12 @@ const LocationExplainerModal = ({
   </motion.div>
 );
 
-const ManualZonePickerModal = ({ 
-  onSelect, 
-  onClose 
-}: { 
-  onSelect: (z: Zone) => void, 
-  onClose: () => void 
+const ManualZonePickerModal = ({
+  onSelect,
+  onClose
+}: {
+  onSelect: (z: Zone) => void,
+  onClose: () => void
 }) => {
   return (
     <motion.div
@@ -1233,7 +1254,7 @@ const ManualZonePickerModal = ({
         </button>
 
         <h3 className="font-serif italic font-bold text-3xl text-sia-text mb-8 tracking-tight">Select Your City</h3>
-        
+
         <div className="space-y-4">
           {PREDEFINED_ZONES.map(z => (
             <button
@@ -1259,7 +1280,7 @@ export default function App() {
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { role: 'ai', content: "Hello! I'm SIA Wellness AI. How can I help you feel better today?" }
   ]);
@@ -1268,34 +1289,8 @@ export default function App() {
   const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [provider, setProvider] = useState('Groq');
 
-  const [questions, setQuestions] = useState<Question[]>(() => {
-    const saved = localStorage.getItem('arin_questions');
-    if (saved) return JSON.parse(saved);
-    
-    // Default mock data for testing
-    return [
-      { id: 'm1', user: 'Anonymous', text: 'Any good pharmacies open 24/7 in Bangalore for emergency period supplies?', time: '10m ago', replies: 1, zone_id: 'city_bangalore', timestamp: Date.now() - 600000 },
-      { id: 'm2', user: 'Anonymous', text: 'Best home remedies for severe bloating? Mumbai heat is making it worse.', time: '1h ago', replies: 0, zone_id: 'city_mumbai', timestamp: Date.now() - 3600000 },
-    ];
-  });
-  const [arinResponses, setArinResponses] = useState<ArinResponse[]>(() => {
-    const saved = localStorage.getItem('arin_responses');
-    if (saved) return JSON.parse(saved);
-
-    return [
-      { 
-        id: 'r1', 
-        question_id: 'm1', 
-        text: 'Apollo Pharmacy in Indiranagar is 24/7! Stay safe sister.', 
-        time: '5m ago', 
-        verdict: 'APPROVED', 
-        safe_summary: '', 
-        show_original: true, 
-        likes: 2, 
-        timestamp: Date.now() - 300000 
-      }
-    ];
-  });
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [arinResponses, setArinResponses] = useState<ArinResponse[]>([]);
   const [currentZone, setCurrentZone] = useState<Zone>(() => {
     const saved = sessionStorage.getItem('arin_zone');
     return saved ? JSON.parse(saved) : PREDEFINED_ZONES[0];
@@ -1320,27 +1315,43 @@ export default function App() {
     }
   };
 
+  // --- Firebase Real-time Sync ---
   useEffect(() => {
-    localStorage.setItem('arin_questions', JSON.stringify(questions));
-  }, [questions]);
+    console.log("🔥 [Firebase] Connecting to Project:", db.app.options.projectId);
+    
+    // Listen for questions
+    const qQuery = query(collection(db, "arin_questions"), orderBy("timestamp", "desc"));
+    const unsubscribeQuestions = onSnapshot(qQuery, (snapshot) => {
+      const source = snapshot.metadata.fromCache ? "Local Cache" : "Live Server";
+      console.log(`📨 [Firebase] Received ${snapshot.size} Questions from ${source}`);
+      const qs: Question[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        qs.push({ id: doc.id, ...data } as Question);
+      });
+      setQuestions(qs);
+    }, (error) => {
+      console.error("❌ Firebase Questions Error:", error.code, error.message);
+      alert("Firebase Connection Error: " + error.message);
+    });
 
-  useEffect(() => {
-    localStorage.setItem('arin_responses', JSON.stringify(arinResponses));
-  }, [arinResponses]);
+    // Listen for responses
+    const rQuery = query(collection(db, "arin_responses"), orderBy("timestamp", "asc"));
+    const unsubscribeResponses = onSnapshot(rQuery, (snapshot) => {
+      console.log("📨 Received Responses Update:", snapshot.size);
+      const rs: ArinResponse[] = [];
+      snapshot.forEach((doc) => {
+        rs.push({ id: doc.id, ...doc.data() } as ArinResponse);
+      });
+      setArinResponses(rs);
+    }, (error) => {
+      console.error("❌ Firebase Responses Error:", error.code, error.message);
+    });
 
-  // Sync state across tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'arin_questions' && e.newValue) {
-        setQuestions(JSON.parse(e.newValue));
-      }
-      if (e.key === 'arin_responses' && e.newValue) {
-        setArinResponses(JSON.parse(e.newValue));
-      }
+    return () => {
+      unsubscribeQuestions();
+      unsubscribeResponses();
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {
@@ -1365,7 +1376,7 @@ export default function App() {
         return;
       }
     }
-    
+
     setIsLocating(true);
     const zone = await getZoneWithCache(() => {
       setShowManualZonePicker(true);
@@ -1432,11 +1443,10 @@ export default function App() {
   };
 
 
-  const handlePostQuestion = (e: React.FormEvent) => {
+  const handlePostQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuestion.trim()) return;
-    const q: Question = {
-      id: Date.now().toString(),
+    const qData = {
       user: 'Anonymous',
       text: newQuestion.trim(),
       time: 'Just now',
@@ -1444,8 +1454,13 @@ export default function App() {
       zone_id: currentZone.id,
       timestamp: Date.now()
     };
-    setQuestions([q, ...questions]);
-    setNewQuestion('');
+    
+    try {
+      await addDoc(collection(db, "arin_questions"), qData);
+      setNewQuestion('');
+    } catch (err) {
+      console.error("Firebase error posting question:", err);
+    }
   };
 
   const handlePostResponse = async (e: React.FormEvent) => {
@@ -1453,17 +1468,32 @@ export default function App() {
     if (!responseInput.trim() || !selectedQuestion) return;
     
     setIsVerifying(true);
+    // Add a temporary local message to show it's "Verifying"
+    const tempResponseId = 'temp-' + Date.now();
+    const tempResponse: ArinResponse = {
+      id: tempResponseId,
+      question_id: selectedQuestion.id,
+      text: responseInput,
+      time: 'Verifying...',
+      verdict: 'APPROVED',
+      likes: 0,
+      timestamp: Date.now()
+    };
+    setArinResponses(prev => [...prev, tempResponse]);
+
     try {
       const moderation = await moderateArinResponse(selectedQuestion.text, responseInput);
       
+      // Remove the temp message
+      setArinResponses(prev => prev.filter(r => r.id !== tempResponseId));
+
       if (moderation.verdict === 'REJECTED') {
         alert("Your response could not be posted: " + (moderation.reason || "Guidelines violation."));
         setIsVerifying(false);
         return;
       }
 
-      const res: ArinResponse = {
-        id: Date.now().toString(),
+      const resData = {
         question_id: selectedQuestion.id,
         text: responseInput,
         time: 'Just now',
@@ -1474,12 +1504,18 @@ export default function App() {
         timestamp: Date.now()
       };
 
-      setArinResponses([res, ...arinResponses]);
-      setQuestions(questions.map(q => q.id === selectedQuestion.id ? { ...q, replies: q.replies + 1 } : q));
+      await addDoc(collection(db, "arin_responses"), resData);
+      
+      // Increment reply count
+      const qRef = doc(db, "arin_questions", selectedQuestion.id);
+      await updateDoc(qRef, {
+        replies: increment(1)
+      });
+
       setResponseInput('');
       setShowRespondModal(false);
     } catch (err) {
-      console.error("Moderation failed", err);
+      console.error("Moderation or Firebase error:", err);
       alert("Moderation service is busy. Please try again.");
     } finally {
       setIsVerifying(false);
@@ -1517,9 +1553,9 @@ export default function App() {
 
   if (appState === 'chat-summary') {
     return (
-      <ChatSummary 
-        onOpenChat={() => setAppState('peer-chat')} 
-        onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }} 
+      <ChatSummary
+        onOpenChat={() => setAppState('peer-chat')}
+        onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }}
       />
     );
   }
@@ -1538,9 +1574,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen font-sans bg-sia-cream selection:bg-sia-pink-light overflow-x-hidden pb-32">
-      <Navbar 
-        showBack={activeView !== 'main' || activeTab !== 'home'} 
-        onBack={activeView !== 'main' ? handleBackToMain : () => setActiveTab('home')} 
+      <Navbar
+        showBack={activeView !== 'main' || activeTab !== 'home'}
+        onBack={activeView !== 'main' ? handleBackToMain : () => setActiveTab('home')}
         onProfile={handleProfileClick}
         activeView={activeView}
       />
@@ -1548,15 +1584,15 @@ export default function App() {
       <AnimatePresence>
         {showProfileMenu && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[105] bg-transparent" 
-              onClick={() => setShowProfileMenu(false)} 
+              className="fixed inset-0 z-[105] bg-transparent"
+              onClick={() => setShowProfileMenu(false)}
             />
-            <ProfileMenu 
-              onClose={() => setShowProfileMenu(false)} 
+            <ProfileMenu
+              onClose={() => setShowProfileMenu(false)}
               onNavigate={handleMenuNavigate}
             />
           </>
@@ -1589,242 +1625,248 @@ export default function App() {
         {activeView === 'main' && (
           <>
             {activeTab === 'home' && (
-          <motion.div
-            key="home"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            {/* Hero Section */}
-            <section id="hero" className="relative pt-40 pb-20 px-6 overflow-hidden min-h-[90vh] flex flex-col justify-center">
-              {/* Background decorations */}
-              <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-sia-pink-light/30 rounded-full blur-[120px] -mr-60 -mt-60" />
-              <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-sia-pink-light/20 rounded-full blur-[100px] -ml-60 -mb-60" />
-
-              <div className="max-w-6xl mx-auto w-full relative z-10">
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-20">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="flex-1 text-center lg:text-left space-y-8"
-                  >
-                    <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white border border-sia-pink-light text-sia-pink text-[10px] uppercase font-bold tracking-[0.2em] shadow-sm">
-                      <Shield className="w-3 h-3" /> Anonymous Peer Network
-                    </div>
-                    <h1 className="font-serif italic font-bold text-7xl md:text-9xl text-sia-text !leading-[0.85] tracking-tight">
-                      You’re not<br /> <span className="text-sia-pink">alone</span>
-                    </h1>
-                    <p className="text-lg md:text-2xl text-sia-text-muted max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
-                      Private support during period emergencies — without the discomfort of asking.
-                    </p>
-                  </motion.div>
-
-                  {/* SOS Button Area */}
-                  <div className="flex-1 flex flex-col items-center justify-center relative">
-
-                    <div className="absolute w-[30rem] h-[30rem] border border-sia-pink/5 rounded-full animate-pulse" />
-                    <div className="absolute w-[24rem] h-[24rem] border border-sia-pink/10 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-
-                    <div className="relative">
-                      <motion.button
-                        id="sos-button"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSOSClick}
-                        className="relative w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-br from-sia-peach to-sia-pink shadow-[0_20px_60px_rgba(216,27,96,0.4)] flex flex-col items-center justify-center text-white border-[10px] border-white group z-10"
-                      >
-                        <Heart className="w-12 h-12 text-white mb-4 fill-white animate-bounce" />
-                        <span className="font-bold text-5xl md:text-6xl tracking-[0.2em] drop-shadow-md">HELP</span>
-                        <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </motion.button>
-
-                      <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full text-center">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-sia-pink opacity-40">Tap to request support anonymously</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Mission & Impact moved here */}
-            <section id="mission" className="py-32 px-6">
-              <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-                <div className="flex-[1.5] p-12 md:p-20 bg-white border border-sia-pink-light rounded-[3rem] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:rotate-0">
-                    <Heart className="w-64 h-64 text-sia-pink fill-sia-pink" />
-                  </div>
-                  <h2 className="font-serif italic font-bold text-5xl md:text-6xl mb-12 text-sia-text leading-tight">The Power of<br />Solidarity</h2>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
-                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                      <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">175M+</div>
-                      <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Women face monthly emergencies in India</p>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                      <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">Instant</div>
-                      <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Anonymous help available with just one tap</p>
-                    </motion.div>
-                  </div>
-
-                  <div className="mt-16 pt-16 border-t border-dashed border-sia-pink-light">
-                    <p className="text-2xl font-serif italic text-sia-text-muted mb-8 italic">"Because asking shouldn't be the hardest part."</p>
-                    <div className="flex items-center gap-4">
-                      <div className="flex -space-x-4">
-                        {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-sia-warm-bg overflow-hidden shadow-sm">
-                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=sister${i}`} alt="user" />
-                          </div>
-                        ))}
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">Verified Support Network</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col gap-8">
-                  <div className="flex-1 p-10 bg-sia-warm-bg border border-sia-pink-light rounded-[3rem] flex flex-col justify-center">
-                    <Shield className="w-10 h-10 text-sia-pink mb-6 opacity-30" />
-                    <h3 className="font-bold text-xl mb-4 text-sia-text uppercase tracking-widest">Our Mission</h3>
-                    <p className="text-sia-text-muted font-light text-sm leading-relaxed">
-                      SIA creates a dignified path to support. By anonymizing the request and masking the location, we dissolve the social friction that prevents women from getting help when they need it most.
-                    </p>
-                  </div>
-                  
-                  <div className="flex-1 p-10 bg-sia-pink text-white rounded-[3rem] flex flex-col justify-center relative overflow-hidden group">
-                    <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10" />
-                    <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Flash Wisdom</h3>
-                    <p className="text-white/80 font-light text-sm leading-relaxed mb-4">
-                      "Self-care is how you take your power back." - Quick wellness insights powered by Sakhi.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-12 bg-white/30 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ x: "-100%" }}
-                          animate={{ x: "100%" }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                          className="h-full w-full bg-white"
-                        />
-                      </div>
-                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Daily Insight</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </motion.div>
-        )}
-
-        {activeTab === 'arin' && (
-          <motion.div
-            key="arin"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <ArinCommunityPage 
-              questions={questions}
-              newQuestion={newQuestion}
-              setNewQuestion={setNewQuestion}
-              handlePostQuestion={handlePostQuestion}
-              onRespond={(q) => {
-                setSelectedQuestion(q);
-                setShowRespondModal(true);
-              }}
-              onHeartResponse={(id) => {
-                setArinResponses(arinResponses.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
-              }}
-              currentZone={currentZone}
-              responses={arinResponses}
-            />
-          </motion.div>
-        )}
-
-        {activeTab === 'capsule' && (
-          <motion.div
-            key="capsule"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <TimeCapsulePage />
-          </motion.div>
-        )}
-
-        {activeTab === 'sakhi' && (
-          <motion.div
-            key="sakhi"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="pt-20 md:pt-32 px-0 md:px-6 max-w-4xl mx-auto flex flex-col items-center pb-0 md:pb-40 h-[calc(100vh-80px)] md:h-auto"
-          >
-            <SectionHeading 
-              title="Sakhi Wellness"
-              subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
-              className="hidden md:block"
-            />
-            
-            <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col h-[500px] md:h-[650px] overflow-hidden relative">
-              {/* WhatsApp-style Background Pattern (Subtle) */}
-              <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
-              
-              <div className="flex items-center gap-4 mb-2 md:mb-10 p-4 md:p-5 bg-white md:bg-sia-cream border-b md:border border-sia-pink-light/30 z-10">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
-                  <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sia-text italic font-serif text-sm md:text-base">Sakhi Companion</h4>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    Ready to support
-                  </div>
-                </div>
-              </div>
-
-              <div 
-                ref={chatContainerRef}
-                className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide px-2"
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
               >
-                {chatMessages.map((msg, i) => (
-                  <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
-                ))}
-                {isTyping && (
-                  <div className="flex justify-start mb-4">
-                    <div className="bg-sia-cream px-5 py-3 rounded-[1.5rem] rounded-tl-none border border-sia-pink-light/30 flex items-center gap-3">
-                      <Loader2 className="w-4 h-4 text-sia-pink animate-spin" />
-                      <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest">Sakhi is thinking...</span>
+                {/* Hero Section */}
+                <section id="hero" className="relative pt-40 pb-20 px-6 overflow-hidden min-h-[90vh] flex flex-col justify-center">
+                  {/* Background decorations */}
+                  <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-sia-pink-light/30 rounded-full blur-[120px] -mr-60 -mt-60" />
+                  <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-sia-pink-light/20 rounded-full blur-[100px] -ml-60 -mb-60" />
+
+                  <div className="max-w-6xl mx-auto w-full relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-20">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="flex-1 text-center lg:text-left space-y-8"
+                      >
+                        <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white border border-sia-pink-light text-sia-pink text-[10px] uppercase font-bold tracking-[0.2em] shadow-sm">
+                          <Shield className="w-3 h-3" /> Anonymous Peer Network
+                        </div>
+                        <h1 className="font-serif italic font-bold text-7xl md:text-9xl text-sia-text !leading-[0.85] tracking-tight">
+                          You’re not<br /> <span className="text-sia-pink">alone</span>
+                        </h1>
+                        <p className="text-lg md:text-2xl text-sia-text-muted max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
+                          Private support during period emergencies — without the discomfort of asking.
+                        </p>
+                      </motion.div>
+
+                      {/* SOS Button Area */}
+                      <div className="flex-1 flex flex-col items-center justify-center relative">
+
+                        <div className="absolute w-[30rem] h-[30rem] border border-sia-pink/5 rounded-full animate-pulse" />
+                        <div className="absolute w-[24rem] h-[24rem] border border-sia-pink/10 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+
+                        <div className="relative">
+                          <motion.button
+                            id="sos-button"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleSOSClick}
+                            className="relative w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-br from-sia-peach to-sia-pink shadow-[0_20px_60px_rgba(216,27,96,0.4)] flex flex-col items-center justify-center text-white border-[10px] border-white group z-10"
+                          >
+                            <Heart className="w-12 h-12 text-white mb-4 fill-white animate-bounce" />
+                            <span className="font-bold text-5xl md:text-6xl tracking-[0.2em] drop-shadow-md">HELP</span>
+                            <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </motion.button>
+
+                          <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-sia-pink opacity-40">Tap to request support anonymously</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
+                </section>
 
-              <div className="mt-auto p-4 bg-white md:bg-transparent border-t md:border-none border-sia-pink-light/30">
-                <form 
-                  className="relative"
-                  onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                >
-                  <input 
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Ask Sakhi anything about period wellness..." 
-                    disabled={isTyping}
-                    className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
-                  />
-                  <button 
-                    type="submit"
-                    disabled={isTyping}
-                    className="absolute right-3 top-3 w-10 h-10 rounded-full bg-sia-pink flex items-center justify-center text-white shadow-lg hover:bg-sia-pink-light hover:text-sia-pink transition-all disabled:bg-gray-200"
+                {/* Mission & Impact moved here */}
+                <section id="mission" className="py-32 px-6">
+                  <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+                    <div className="flex-[1.5] p-12 md:p-20 bg-white border border-sia-pink-light rounded-[3rem] relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:rotate-0">
+                        <Heart className="w-64 h-64 text-sia-pink fill-sia-pink" />
+                      </div>
+                      <h2 className="font-serif italic font-bold text-5xl md:text-6xl mb-12 text-sia-text leading-tight">The Power of<br />Solidarity</h2>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
+                        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+                          <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">175M+</div>
+                          <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Women face monthly emergencies in India</p>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+                          <div className="text-7xl font-display font-semibold text-sia-pink mb-4 tracking-tighter">Instant</div>
+                          <p className="text-sia-text-muted font-bold leading-relaxed uppercase tracking-[0.2em] text-[10px] opacity-60">Anonymous help available with just one tap</p>
+                        </motion.div>
+                      </div>
+
+                      <div className="mt-16 pt-16 border-t border-dashed border-sia-pink-light">
+                        <p className="text-2xl font-serif italic text-sia-text-muted mb-8 italic">"Because asking shouldn't be the hardest part."</p>
+                        <div className="flex items-center gap-4">
+                          <div className="flex -space-x-4">
+                            {[1, 2, 3, 4].map(i => (
+                              <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-sia-warm-bg overflow-hidden shadow-sm">
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=sister${i}`} alt="user" />
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">Verified Support Network</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col gap-8">
+                      <div className="flex-1 p-10 bg-sia-warm-bg border border-sia-pink-light rounded-[3rem] flex flex-col justify-center">
+                        <Shield className="w-10 h-10 text-sia-pink mb-6 opacity-30" />
+                        <h3 className="font-bold text-xl mb-4 text-sia-text uppercase tracking-widest">Our Mission</h3>
+                        <p className="text-sia-text-muted font-light text-sm leading-relaxed">
+                          SIA creates a dignified path to support. By anonymizing the request and masking the location, we dissolve the social friction that prevents women from getting help when they need it most.
+                        </p>
+                      </div>
+
+                      <div className="flex-1 p-10 bg-sia-pink text-white rounded-[3rem] flex flex-col justify-center relative overflow-hidden group">
+                        <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10" />
+                        <h3 className="font-bold text-xl mb-4 uppercase tracking-widest">Flash Wisdom</h3>
+                        <p className="text-white/80 font-light text-sm leading-relaxed mb-4">
+                          "Self-care is how you take your power back." - Quick wellness insights powered by Sakhi.
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-12 bg-white/30 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ x: "-100%" }}
+                              animate={{ x: "100%" }}
+                              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                              className="h-full w-full bg-white"
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Daily Insight</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </motion.div>
+            )}
+
+            {activeTab === 'arin' && (
+              <motion.div
+                key="arin"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <ArinCommunityPage
+                  questions={questions}
+                  newQuestion={newQuestion}
+                  setNewQuestion={setNewQuestion}
+                  handlePostQuestion={handlePostQuestion}
+                  onRespond={(q) => {
+                    setSelectedQuestion(q);
+                    setShowRespondModal(true);
+                  }}
+                  onHeartResponse={async (id) => {
+                    // Optimistic update
+                    setArinResponses(prev => prev.map(r => r.id === id ? { ...r, likes: (r.likes || 0) + 1 } : r));
+                    
+                    const rRef = doc(db, "arin_responses", id);
+                    await updateDoc(rRef, {
+                      likes: increment(1)
+                    });
+                  }}
+                  currentZone={currentZone}
+                  responses={arinResponses}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'capsule' && (
+              <motion.div
+                key="capsule"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <TimeCapsulePage />
+              </motion.div>
+            )}
+
+            {activeTab === 'sakhi' && (
+              <motion.div
+                key="sakhi"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="pt-20 md:pt-32 px-0 md:px-6 max-w-4xl mx-auto flex flex-col items-center pb-0 md:pb-40 h-[calc(100vh-80px)] md:h-auto"
+              >
+                <SectionHeading
+                  title="Sakhi Wellness"
+                  subtitle="Indian home remedies, comfort tips, and period wellness guidance inspired by real experiences."
+                  className="hidden md:block"
+                />
+
+                <div className="w-full max-w-2xl bg-sia-cream/30 md:bg-white rounded-none md:rounded-[3rem] p-0 md:p-8 shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-x-0 md:border border-sia-pink-light flex flex-col h-[500px] md:h-[650px] overflow-hidden relative">
+                  {/* WhatsApp-style Background Pattern (Subtle) */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none md:hidden" style={{ backgroundImage: 'radial-gradient(#d81b60 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+
+                  <div className="flex items-center gap-4 mb-2 md:mb-10 p-4 md:p-5 bg-white md:bg-sia-cream border-b md:border border-sia-pink-light/30 z-10">
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-sia-peach to-sia-pink flex items-center justify-center shadow-md">
+                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sia-text italic font-serif text-sm md:text-base">Sakhi Companion</h4>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-green-500">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        Ready to support
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={chatContainerRef}
+                    className="flex-1 space-y-6 mb-8 overflow-y-auto scrollbar-hide px-2"
                   >
-                    <ArrowRight className="w-5 h-5 ghost-pulse" />
-                  </button>
-                </form>
-              </div>
-            </div>
-          </motion.div>
-        )}
+                    {chatMessages.map((msg, i) => (
+                      <ChatBubble key={i} isSakhi={msg.role === 'ai'} message={msg.content} />
+                    ))}
+                    {isTyping && (
+                      <div className="flex justify-start mb-4">
+                        <div className="bg-sia-cream px-5 py-3 rounded-[1.5rem] rounded-tl-none border border-sia-pink-light/30 flex items-center gap-3">
+                          <Loader2 className="w-4 h-4 text-sia-pink animate-spin" />
+                          <span className="text-[10px] text-sia-text-muted font-bold uppercase tracking-widest">Sakhi is thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  <div className="mt-auto p-4 bg-white md:bg-transparent border-t md:border-none border-sia-pink-light/30">
+                    <form
+                      className="relative"
+                      onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                    >
+                      <input
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        placeholder="Ask Sakhi anything about period wellness..."
+                        disabled={isTyping}
+                        className="w-full bg-sia-warm-bg border border-sia-pink-light h-16 rounded-full px-8 pr-16 focus:outline-none focus:ring-2 focus:ring-sia-pink shadow-inner transition-all disabled:opacity-50 text-sm font-light"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isTyping}
+                        className="absolute right-3 top-3 w-10 h-10 rounded-full bg-sia-pink flex items-center justify-center text-white shadow-lg hover:bg-sia-pink-light hover:text-sia-pink transition-all disabled:bg-gray-200"
+                      >
+                        <ArrowRight className="w-5 h-5 ghost-pulse" />
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </>
         )}
       </AnimatePresence>
@@ -1836,8 +1878,8 @@ export default function App() {
       {/* Footer Look-alike from design */}
       <footer className="h-16 bg-white border-t border-sia-pink-light px-10 flex items-center justify-between">
         <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-sia-text opacity-40">
-           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-           Searching for support within ~300m
+          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          Searching for support within ~300m
         </div>
         <div className="text-[10px] font-bold text-sia-pink opacity-40 italic font-serif">Created with care for her dignity and safety</div>
       </footer>
@@ -1851,7 +1893,7 @@ export default function App() {
           />
         )}
         {showLogoutModal && (
-          <LogoutModal 
+          <LogoutModal
             onClose={() => setShowLogoutModal(false)}
             onLogout={() => {
               setShowLogoutModal(false);

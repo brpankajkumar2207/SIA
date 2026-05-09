@@ -50,7 +50,7 @@ function buildLocalRagReply(userMessage, chunks) {
 }
 
 // ── Groq API call ─────────────────────────────────────────────────────────────
-async function callGroq(userMessage, systemPrompt, history) {
+async function callGroq(userMessage, systemPrompt, history, timeoutMs = 8000) {
   const response = await withTimeout(
     fetch(GROQ_URL, {
       method: 'POST',
@@ -69,7 +69,7 @@ async function callGroq(userMessage, systemPrompt, history) {
         ],
       }),
     }),
-    8000  // 8 second timeout
+    timeoutMs
   );
 
   if (!response.ok) {
@@ -183,23 +183,28 @@ Respond ONLY in this exact JSON format, no other text:
 }
 `;
 
-  // Fallback for local development if keys are missing
+  // Production Check: Ensure API keys are present
   if (!GROQ_API_KEY && !GEMINI_API_KEY) {
-    console.warn('[Moderation] No API keys found. Auto-approving for development.');
-    return { verdict: 'APPROVED', reason: '', safe_summary: responseText.slice(0, 50) + '...', show_original: true };
+    console.error('[Moderation] Missing API keys in environment. Failing safe.');
+    return { verdict: 'REJECTED', reason: 'Safety verification offline. Please contact admin.', safe_summary: '', show_original: false };
   }
 
   try {
-    const rawResult = await callGroq(responseText, moderationPrompt, []);
+    // Aggressive timeout for moderation to keep UI fast
+    const rawResult = await callGroq(responseText, moderationPrompt, [], 4000);
     const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
-    return JSON.parse(jsonMatch ? jsonMatch[0] : '{"verdict":"REJECTED", "reason":"Parse error"}');
+    if (!jsonMatch) throw new Error('Invalid AI response format');
+    return JSON.parse(jsonMatch[0]);
   } catch (err) {
     try {
+      // Use a shorter timeout for moderation fallback
       const rawResult = await callGemini(responseText, moderationPrompt, []);
       const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
-      return JSON.parse(jsonMatch ? jsonMatch[0] : '{"verdict":"REJECTED", "reason":"Parse error"}');
+      if (!jsonMatch) throw new Error('Invalid AI response format');
+      return JSON.parse(jsonMatch[0]);
     } catch (fallbackErr) {
+      console.error('[Moderation] Critical Failure:', fallbackErr);
       return { verdict: 'REJECTED', reason: 'Moderation service unavailable', safe_summary: '', show_original: false };
     }
   }
-}
+}
