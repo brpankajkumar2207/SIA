@@ -59,7 +59,8 @@ import {
   doc, 
   updateDoc, 
   increment,
-  setDoc
+  setDoc,
+  getDocs
 } from "firebase/firestore";
 
 
@@ -753,7 +754,52 @@ const PeerChat = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, onHelpReceived: () => void }) => {
+const ChatSummary = ({ 
+  onOpenChat, 
+  onHelpReceived,
+  currentZone,
+  user
+}: { 
+  onOpenChat: () => void, 
+  onHelpReceived: () => void,
+  currentZone?: Zone,
+  user?: FirebaseUser | null
+}) => {
+  const [nearbyUsers, setNearbyUsers] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(true);
+
+  useEffect(() => {
+    const fetchNearby = async () => {
+      if (!db || !currentZone || !user) {
+        setIsSearching(false);
+        return;
+      }
+      try {
+        const q = query(collection(db, "users_location"));
+        const snapshot = await getDocs(q);
+        const nearby: string[] = [];
+        
+        snapshot.forEach(doc => {
+          if (doc.id === user.uid) return;
+          const data = doc.data();
+          const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, data.lat, data.lng);
+          // Only show users active in the last 15 minutes, within 100 meters
+          const isRecent = Date.now() - data.timestamp < 15 * 60 * 1000;
+          if (dist <= 0.1 && isRecent) {
+            nearby.push(data.email);
+          }
+        });
+        setNearbyUsers(nearby);
+      } catch(e) {
+        console.error("Failed to fetch nearby users:", e);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchNearby();
+  }, [currentZone, user]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -779,8 +825,38 @@ const ChatSummary = ({ onOpenChat, onHelpReceived }: { onOpenChat: () => void, o
           Your connection with the anonymous sister is still active. You can continue chatting or close the session if you've received the help you needed.
         </p>
 
-        {/* Reusable Wisdom Summary in Compact Mode */}
-        <WisdomSummary compact />
+        {/* Nearby Users Display */}
+        <div className="w-full bg-sia-cream/40 rounded-[2rem] border border-sia-pink-light/30 p-6 mb-8 text-left">
+          <div className="flex items-center gap-3 mb-4">
+            <MapPin className="w-5 h-5 text-sia-pink animate-pulse" />
+            <h4 className="font-bold text-sia-text uppercase tracking-widest text-xs">Sisters within 100m</h4>
+          </div>
+          
+          {isSearching ? (
+            <div className="flex items-center gap-3 text-sia-text-muted text-sm italic font-light">
+              <Loader2 className="w-4 h-4 animate-spin text-sia-pink" /> Scanning vicinity...
+            </div>
+          ) : nearbyUsers.length > 0 ? (
+            <ul className="space-y-3">
+              {nearbyUsers.map((email, idx) => {
+                // Obscure email for safety (e.g. s***@example.com)
+                const [name, domain] = email.split('@');
+                const obscured = name.length > 2 ? `${name[0]}***${name[name.length-1]}@${domain}` : `***@${domain}`;
+                return (
+                  <li key={idx} className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-sia-pink-light/20 shadow-sm">
+                    <User className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-bold text-sia-text">{obscured}</span>
+                    <span className="ml-auto text-[9px] uppercase tracking-widest text-green-500 font-bold bg-green-50 px-2 py-1 rounded-full">Nearby</span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="text-sia-text-muted text-sm italic font-light">
+              No verified sisters detected within 100 meters right now. The broadcast remains active.
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
           <button
@@ -1612,19 +1688,39 @@ export default function App() {
   }, []);
 
   // --- Auto-detect Location After Login & 10s Tracking ---
+  const updateLocationInFirebase = async (zone: Zone) => {
+    if (!user || !db || zone.center.lat === 0) return;
+    try {
+      await setDoc(doc(db, "users_location", user.uid), {
+        email: user.email || 'anonymous@sia.com',
+        lat: zone.center.lat,
+        lng: zone.center.lng,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      console.error("Failed to update location in Firebase:", e);
+    }
+  };
+
   useEffect(() => {
     if (!user || appState === 'login') return;
 
     // Initial fetch
     getZoneWithCache().then((zone) => {
-      if (zone) setCurrentZone(zone);
+      if (zone) {
+        setCurrentZone(zone);
+        updateLocationInFirebase(zone);
+      }
     });
 
     // Setup 10s interval for live tracking
     const interval = setInterval(() => {
       console.log("🔄 Tracking: Fetching latest precise location...");
       getZoneWithCache(true).then((zone) => {
-        if (zone) setCurrentZone(zone);
+        if (zone) {
+          setCurrentZone(zone);
+          updateLocationInFirebase(zone);
+        }
       });
     }, 10000);
 
@@ -1644,7 +1740,10 @@ export default function App() {
   const handleInitialLocation = async () => {
     setIsLocating(true);
     const zone = await getZoneWithCache(true);
-    if (zone) setCurrentZone(zone);
+    if (zone) {
+      setCurrentZone(zone);
+      updateLocationInFirebase(zone);
+    }
     setIsLocating(false);
   };
 
@@ -1860,6 +1959,8 @@ export default function App() {
       <ChatSummary
         onOpenChat={() => setAppState('peer-chat')}
         onHelpReceived={() => { setAppState('idle'); setActiveTab('home'); }}
+        currentZone={currentZone}
+        user={user}
       />
     );
   }
