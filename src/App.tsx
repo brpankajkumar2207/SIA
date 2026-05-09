@@ -38,9 +38,10 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-<<<<<<< HEAD
-import { askSakhiKnows } from './services/sakhiAI';
+import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
+import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
 import { auth } from './firebase';
+import { db } from './services/firebaseConfig';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -48,11 +49,6 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
-=======
-import { askSakhiKnows, moderateArinResponse } from './services/sakhiAI';
-import { getZoneWithCache, PREDEFINED_ZONES, Zone as ArinZone } from './services/arinLocationService';
-<<<<<<< HEAD
-import { db } from './services/firebaseConfig';
 import { 
   collection, 
   addDoc, 
@@ -65,9 +61,6 @@ import {
   increment,
   setDoc
 } from "firebase/firestore";
-=======
->>>>>>> dcfae4e5fd3a11404b25cabd0d8fc589680cc88e
->>>>>>> 62d81de38096f85eaf06ba6b22cece2798ee27cf
 
 
 
@@ -1274,7 +1267,7 @@ const ArinCommunityPage = ({
         </div>
       </div>
 
-      {console.log("🏙️ Current Zone:", currentZone.id, "| Total Questions Received:", questions.length)}
+      {/* Diagnostics log removed for build stability */}
 
       {questions.filter(q => q.zone_id === currentZone.id).length === 0 && (
         <div className="p-20 text-center bg-white/40 rounded-[3rem] border border-dashed border-sia-pink-light/40">
@@ -1726,6 +1719,8 @@ export default function App() {
       text: responseInput,
       time: 'Verifying...',
       verdict: 'APPROVED',
+      safe_summary: '',
+      show_original: true,
       likes: 0,
       timestamp: Date.now()
     };

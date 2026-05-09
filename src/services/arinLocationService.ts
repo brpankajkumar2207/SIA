@@ -3,19 +3,10 @@
 export interface Zone {
   id: string;
   name: string;
-  type: 'hostel' | 'campus' | 'office' | 'residential';
+  type: 'hostel' | 'campus' | 'office' | 'residential' | 'city';
   display_name: string;
   center: { lat: number; lng: number };
   radius_km: number;
-}
-
-export interface Zone {
-  id: string;
-  name: string;
-  type: 'city';
-  display_name: string;
-  center: { lat: number; lng: number };
-  radius_km: number; // Approximate city radius
 }
 
 export const PREDEFINED_ZONES: Zone[] = [
