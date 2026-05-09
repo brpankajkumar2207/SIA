@@ -2167,12 +2167,7 @@ export default function App() {
           const alreadyAlerted = alertedSOSIds.current.has(sosAlert.id);
           const hasLocation = currentZone.center.lat !== 0;
           
-          console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}:`, {
-            isOthers, isRecent, isNewForUs, alreadyAlerted, hasLocation,
-            alertUserId: sosAlert.user_id, myUid: user.uid,
-            alertTime: sosAlert.timestamp, sessionStart: sessionStartTime.current,
-            timeDiff: Date.now() - sosAlert.timestamp,
-          });
+          console.log(`🔍 [SOS Filter] Alert ${sosAlert.id}: isOthers=${isOthers}, isRecent=${isRecent}, isNewForUs=${isNewForUs}, alreadyAlerted=${alreadyAlerted}, hasLocation=${hasLocation}`);
           
           if (isOthers && isRecent && isNewForUs && !alreadyAlerted && hasLocation) {
             const dist = getDistanceKm(currentZone.center.lat, currentZone.center.lng, sosAlert.lat, sosAlert.lng);
