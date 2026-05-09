@@ -50,7 +50,7 @@ import {
   signOut, 
   onAuthStateChanged,
   FirebaseUser as FirebaseUser
-} from './services/devFirebaseWrapper.ts';
+} from './services/devFirebaseWrapper';
 import {
   collection,
   addDoc,
@@ -101,6 +101,9 @@ type SOSAlert = {
   timestamp: number;
   message?: string;
   request_type?: string;
+  status: 'searching' | 'accepted' | 'closed';
+  helper_id?: string | null;
+  helper_name?: string | null;
 };
 type ArinResponse = { id: string; question_id: string; text: string; time: string; verdict: 'APPROVED' | 'REJECTED' | 'NEEDS_IMPROVEMENT'; safe_summary: string; show_original: boolean; timestamp: number; thumbsUp?: number; thumbsDown?: number; likes?: number; votes?: Record<string, CapsuleVote> };
 type Zone = ArinZone;
@@ -492,7 +495,7 @@ const ProfilePage = ({ currentZone, user }: { currentZone?: Zone, user: Firebase
       if (db) {
         const userRef = doc(db, "users", user.uid);
         getDocs(query(collection(db, "users"), where("__name__", "==", user.uid))).then(snap => {
-          if (!snap.empty) {
+          if (snap.size > 0) {
             const data = snap.docs[0].data();
             if (data.name) setUserName(data.name);
             else if (user.displayName) setUserName(user.displayName);
@@ -972,8 +975,8 @@ const ChatSummary = ({
   user,
   peerName
 }: { 
-  onOpenChat: () => void, 
-  onHelpReceived: () => void,
+  onOpenChat: () => void | Promise<void>, 
+  onHelpReceived: () => void | Promise<void>,
   currentZone?: Zone,
   user?: FirebaseUser | null,
   peerName?: string | null
@@ -1111,14 +1114,15 @@ const WaitingScreen = ({
   user,
   activeSosId
 }: { 
-  onCancel: () => void, 
-  onMatchFound: (helperName: string) => void,
-  onNoHelpFound: () => void,
+  onCancel: () => void | Promise<void>, 
+  onMatchFound: (helperName: string) => void | Promise<void>,
+  onNoHelpFound: () => void | Promise<void>,
   currentZone?: Zone,
   user?: FirebaseUser | null,
   activeSosId?: string | null
 }) => {
   const [matchFound, setMatchFound] = useState(false);
+  const [helperName, setHelperName] = useState<string>('');
 
   useEffect(() => {
     let isMounted = true;
@@ -1141,6 +1145,7 @@ const WaitingScreen = ({
           if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.status === 'accepted' && data.helper_name) {
+              setHelperName(data.helper_name);
               setMatchFound(true);
               // Small delay before automatically transitioning to chat
               setTimeout(() => {
@@ -1224,7 +1229,7 @@ const WaitingScreen = ({
         <motion.button
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          onClick={onMatchFound}
+          onClick={() => onMatchFound(helperName)}
           className="w-full max-w-xs h-16 rounded-full bg-green-500 text-white font-bold uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-4 hover:bg-green-600 transition-colors"
         >
           Receive Help <ArrowRight className="w-5 h-5" />
@@ -2328,6 +2333,7 @@ export default function App() {
               sendNotification();
             } else {
               console.log(`❌ [SOS] Too far: ${dist.toFixed(3)} km > 0.5 km`);
+            }
             }
           }
         }
