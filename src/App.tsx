@@ -277,14 +277,14 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
             >
               Create an Account
             </button>
-            <p>priyanka.sharma@edu.com  password : Priyanka@123</p>
-            <p>meera.nair@edu.com  password : Meera@123</p>
-            <p>priyanka.sharma@edu.com  password : Priyanka@123</p>
-            <p>nithya.rao@edu.com  password : Nithya@123</p>
+            <p>DEMO CREDENTIALS</p>
+            <p className="text-[10px]">priyanka.sharma@edu.com  password : Priyanka@123</p>
+            <p className="text-[10px]">meera.nair@edu.com  password : Meera@123</p>
+            <p className="text-[10px]">nithya.rao@edu.com  password : Nithya@123</p>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </motion.div >
+    </div >
   );
 };
 
