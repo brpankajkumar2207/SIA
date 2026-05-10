@@ -277,6 +277,10 @@ const LoginPage = ({ onLogin, onSwitchToSignup }: { onLogin: () => void, onSwitc
             >
               Create an Account
             </button>
+            <p>priyanka.sharma@edu.com  password : Priyanka@123</p>
+            <p>meera.nair@edu.com  password : Meera@123</p>
+            <p>priyanka.sharma@edu.com  password : Priyanka@123</p>
+            <p>nithya.rao@edu.com  password : Nithya@123</p>
           </div>
         </div>
       </motion.div>
@@ -2371,12 +2375,12 @@ export default function App() {
                     if ("Notification" in window && Notification.permission === "granted") {
                       const notification = new Notification(title, { body, icon: '/icon.png', tag: sosAlert.id });
                       nativeNotifications.current[sosAlert.id] = notification;
-                      
+
                       notification.onclick = () => {
                         window.focus();
                         notification.close();
                       };
-                      
+
                       console.log("✅ [SOS] Sent via new Notification()");
                       return;
                     }
