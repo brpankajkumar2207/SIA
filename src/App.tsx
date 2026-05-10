@@ -1155,7 +1155,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] bg-black/10 backdrop-blur-sm flex items-end justify-center"
+      className="fixed inset-0 z-[110] bg-black/10 backdrop-blur-sm flex items-end justify-center"
       onClick={onClose}
     >
       <motion.div
@@ -1163,7 +1163,7 @@ const SOSModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (opt: 
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full max-w-lg bg-white rounded-t-[3rem] p-8 pb-12 shadow-[0_-10px_50px_rgba(0,0,0,0.1)] relative"
+        className="w-full max-w-lg bg-white rounded-t-[3rem] p-8 pb-28 shadow-[0_-10px_50px_rgba(0,0,0,0.1)] relative"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-12 h-1 bg-[#FCE4EC] rounded-full mx-auto mb-10" />
